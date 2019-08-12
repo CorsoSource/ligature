@@ -1,4 +1,13 @@
 class View(object):
+    """Scan and iterate over data, pointing to the canonical source.
+        
+    TODO:
+     - Reimplement iterSlice to track where it left off
+       - Use source info to determine if more data available for generator
+     - Implement iterSlice to return windows instead of steps
+     - Use caching to make slices of slices work 
+       (though iterSlice should step ok, that's not likely to be desired in practice)
+    """
     
     __slots__ = ('_sources', '_columns', '_slices', '_getters')
     # sources is a tuple of RecordSet or View references
@@ -11,7 +20,7 @@ class View(object):
     # If a source updates, the slices need to be recalculated
     #   - note that the slices may only partially need to be recalculated
     
-    def __init__(self, sources, columns, selector):
+    def __init__(self, sources, columns, selector=slice(None,None,None)):
         self._columns = columns
         self._resolve(sources)
         
@@ -27,6 +36,7 @@ class View(object):
         for column in self._columns:
             for source in reversed(sources):
                 if isinstance(source, View):
+                    raise NotImplementedError("Views on views is not functional yet. See TODO list.")
                     try:
                         columnIndex = source._columns.index(column)
                         getters.append(source._getters(columnIndex))
