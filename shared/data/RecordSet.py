@@ -1,3 +1,33 @@
+import functools
+
+
+class RecordSetColumn(object):
+    __slots__ = ('_source', '_index')
+    
+    def __init__(self, recordSet, columnIndex):
+        self._source = recordSet
+        self._index = columnIndex
+
+    def __iter__(self):
+        """Redirect to the tuple stored when iterating."""
+        return (record._tuple[self._index] for record in self._source._records)
+    
+    def __getitem__(self, slicer):
+        """Return the value or a slice, depending.
+        This has what I consider a nice balance in overhead. If you find that calling a RecordSet by column
+          is more convenient, by index this way is just over twice as slow as RecordSet._records[index].column
+          and the slice is about thrice as slow as that.
+        """
+        if isinstance(slicer, int):
+            return self._source._records[slicer]._tuple[self._index]
+        else:
+            return (record._tuple[self._index] for record in self._source._records[slicer])
+
+    def __repr__(self):
+        'Format the representation string for better printing'
+        return 'RecordSetColumn("%s" at %d)' % (self._source._RecordType._fields[self._index], self._index)
+
+
 class RecordSet(object):
     """
     
@@ -16,40 +46,51 @@ class RecordSet(object):
         
         # We can initialize with a record type, a record, or an iterable of records
         # First, check if the first entry is the type,
-        #   and if so initialize the records provided
-        try:
-            assert issubclass(args[0], RecordType)
-            self._RecordType = args[0]
-            if len(args) > 1:
-                # RecordSet(RecordType, iterable)
-                if len(args) == 2:
-                    self._records = [self._RecordType(record) for record in args[1]]
-                # RecordSet(RecordType, *iterable)
-                else:
-                    self._records = [self._RecordType(record) for record in args[1:]]
-            # RecordSet(RecordType)
-            else:
-                self._records = []
+        #   and if so initialize the records provided        if len(args) == 1 and isinstance(args[0], BasicDataset):
+            ds = args[0]
+            self._RecordType = genRecordType(ds.getColumnNames())
+            columnIxs = range(len(self._RecordType._fields))
             
-        except AssertionError, err:
-            raise TypeError('Initialize RecordSets with RecordType objects only.\nVerify first argument is of RecordType and arguments have the correct number of values.')
-        # Otherwise we're initializing with data
-        except TypeError:
-            # Check first if the data is just a record
-            # RecordSet(someRecord)
-            if isinstance(args, RecordType):
-                self._RecordType = type(args)
-            # or if it's a bunch of records
-            # RecordSet(*iterableOfRecords)
-            elif isinstance(args[0], RecordType):
-                self._RecordType = type(args[0])
-                assert all(isinstance(r, RecordType) for r in args), 'All entries were not a RecordType'            
-            else:
-                raise TypeError('RecordSets may contain RecordType objects only.')
+            records = []
+            for rix in range(ds.getRowCount()):
+                row = tuple(ds.getValueAt(rix, cix) for cix in columnIxs)
+                records.append(self._RecordType(row))
+            self._records = records
+        else:
         
-            self._records = list(args)
-        except Exception, err:
-            raise err
+            try:
+                assert issubclass(args[0], RecordType)
+                self._RecordType = args[0]
+                if len(args) > 1:
+                    # RecordSet(RecordType, iterable)
+                    if len(args) == 2:
+                        self._records = [self._RecordType(record) for record in args[1]]
+                    # RecordSet(RecordType, *iterable)
+                    else:
+                        self._records = [self._RecordType(record) for record in args[1:]]
+                # RecordSet(RecordType)
+                else:
+                    self._records = []
+                
+            except AssertionError, err:
+                raise TypeError('Initialize RecordSets with RecordType objects only.\nVerify first argument is of RecordType and arguments have the correct number of values.')
+            # Otherwise we're initializing with data
+            except TypeError:
+                # Check first if the data is just a record
+                # RecordSet(someRecord)
+                if isinstance(args, RecordType):
+                    self._RecordType = type(args)
+                # or if it's a bunch of records
+                # RecordSet(*iterableOfRecords)
+                elif isinstance(args[0], RecordType):
+                    self._RecordType = type(args[0])
+                    assert all(isinstance(r, RecordType) for r in args), 'All entries were not a RecordType'            
+                else:
+                    raise TypeError('RecordSets may contain RecordType objects only.')
+            
+                self._records = list(args)
+            except Exception, err:
+                raise err
         
         self._subscribers = []
         
