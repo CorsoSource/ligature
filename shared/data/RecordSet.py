@@ -1,29 +1,3 @@
-class RecordSetColumn(object):
-    __slots__ = ('_source', '_index')
-    
-    def __init__(self, recordSet, columnIndex):
-        self._source = recordSet
-        self._index = columnIndex
-
-    def __iter__(self):
-        """Redirect to the tuple stored when iterating."""
-        return (record._tuple[self._index] for record in self._source._records)
-    
-    def __getitem__(self, slicer):
-        """Return the value or a slice, depending.
-        This has what I consider a nice balance in overhead. If you find that calling a RecordSet by column
-          is more convenient, by index this way is just over twice as slow as RecordSet._records[index].column
-          and the slice is about thrice as slow as that.
-        """
-        if isinstance(slicer, int):
-            return self._source._records[slicer]._tuple[self._index]
-        else:
-            return (record._tuple[self._index] for record in self._source._records[slicer])
-
-    def __repr__(self):
-        'Format the representation string for better printing'
-        return 'RecordSetColumn("%s" at %d)' % (self._source._RecordType._fields[self._index], self._index)
-
 class RecordSet(object):
     """
     
@@ -46,20 +20,27 @@ class RecordSet(object):
         try:
             assert issubclass(args[0], RecordType)
             self._RecordType = args[0]
-            
             if len(args) > 1:
-                self._records = [self._RecordType(record) for record in args[1:]]
+                # RecordSet(RecordType, iterable)
+                if len(args) == 2:
+                    self._records = [self._RecordType(record) for record in args[1]]
+                # RecordSet(RecordType, *iterable)
+                else:
+                    self._records = [self._RecordType(record) for record in args[1:]]
+            # RecordSet(RecordType)
             else:
                 self._records = []
             
-        except AssertionError:
-            raise TypeError('Initialize RecordSets with RecordType objects only.')
+        except AssertionError, err:
+            raise TypeError('Initialize RecordSets with RecordType objects only.\nVerify first argument is of RecordType and arguments have the correct number of values.')
         # Otherwise we're initializing with data
         except TypeError:
             # Check first if the data is just a record
+            # RecordSet(someRecord)
             if isinstance(args, RecordType):
                 self._RecordType = type(args)
             # or if it's a bunch of records
+            # RecordSet(*iterableOfRecords)
             elif isinstance(args[0], RecordType):
                 self._RecordType = type(args[0])
                 assert all(isinstance(r, RecordType) for r in args), 'All entries were not a RecordType'            
@@ -67,6 +48,8 @@ class RecordSet(object):
                 raise TypeError('RecordSets may contain RecordType objects only.')
         
             self._records = list(args)
+        except Exception, err:
+            raise err
         
         self._subscribers = []
         
@@ -193,8 +176,12 @@ class RecordSet(object):
         ellideLimit = 10
         out = ['RecordSet with %s records' % len(self)]
         # preprocess
-        maxWidths = [max(len(repr(v))+1 for v in column) for column in zip(*self._records[:ellideLimit])]
-        maxWidths = [max(mw,len(f)) for mw,f in zip(maxWidths, self._RecordType._fields)]
+        maxWidths = [max([len(f)] + [len(repr(v))+1 for v in column]) 
+                     for f,column 
+                     in zip(self._RecordType._fields,
+                            zip(*self._records[:ellideLimit]) 
+                               if self._records 
+                               else ['']*len(self._RecordType._fields))]        
         prefixPattern = ' %%%ds |' % math.floor(math.log10(ellideLimit))
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple([''] + list(self._RecordType._fields))]
