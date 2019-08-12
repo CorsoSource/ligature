@@ -1,0 +1,115 @@
+class RecordType(object):
+    """Inspired by recipe in Python2 standard library.
+    https://docs.python.org/2/library/collections.html#collections.namedtuple
+
+    But doesn't follow the same design for easier overloading.
+    """
+    __slots__ = ('_tuple')
+    _fields = tuple()
+    _sanitizedFields = tuple()
+    _lookup = {}
+
+    _reprString = 'Record(%s)' % (', '.join("'%s'=%%r" % f for f in _fields),)
+
+    def __init__(self, *iterable, **overrides):
+        # For completeness, we want to also construct with keywords, if we have to
+        if overrides:
+            if iterable:
+                safeIterable = iterable + tuple([None]*(len(R._fields)-len(iterable)))
+                self._tuple = tuple(overrides.get(f, overrides.get(fs, si)) 
+                                    for f,fs,si 
+                                    in zip(self._fields,self._sanitizedFields, safeIterable))
+            else:
+                self._tuple = tuple(overrides.get(f, overrides.get(fs))
+                                    for f,fs 
+                                    in zip(self._fields,self._sanitizedFields))
+        else:
+            self._tuple = tuple(*iterable)
+            
+        assert len(self._tuple) == len(self._fields), 'Expected %d args, but got %d' % (len(self._fields), len(self._tuple))
+    
+        # monkey patch for higher speed access
+        # Generate this on class creation to make init faster
+        #for ix, key in enumerate(self._sanitizedFields):
+        #    setattr(self.__class__, key, property(lambda self, ix=ix: self._tuple[ix]))
+
+    
+    def _asdict(self):
+        return dict(zip(self._fields, self))
+
+    @classmethod
+    def keys(cls):
+        return cls._fields
+
+    def values(self):
+        return self._tuple
+
+    def _replace(_self, **keyValues):
+        result = _self._make(map(keyValues.pop, _self._fields, _self))
+        if keyValues: # make sure all got consumed by the map
+            raise ValueError('Got unexpected field names: %r' % keyValues.keys())
+        self._tuple = result
+
+    def __getitem__(self, key):
+        try: # EAFP
+            return self._tuple[key]
+        except (TypeError,IndexError):
+            return self._tuple[self._lookup[key]]
+
+    def __iter__(self):
+        """Redirect to the tuple stored when iterating."""
+        return (v for v in self._tuple)
+
+
+    def __repr__(self):
+        'Format the representation string for better printing'
+        return self._reprString % self._tuple
+    def __getnewargs__(self):
+        'Return self as a plain tuple.  Used by copy and pickle.'
+        return tuple(self)
+
+    def __getstate__(self):
+        'Exclude the OrderedDict from pickling'
+        pass
+
+
+def genRecordType(header):
+    """Returns something like a namedtuple. 
+    Designed to have lightweight instances while having many convenient ways
+    to access the data.
+    """
+
+    if isinstance(header, BasicDataset):
+        rawFields = tuple(h for h in header.getColumnNames())
+    else:
+        rawFields = tuple(h for h in header)	
+
+    unsafePattern = re.compile('[^a-zA-Z0-9_]')
+    sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]
+
+    dupeCheck = set()
+    for i,(sf,f) in enumerate(zip(sanitizedFields, rawFields)):
+        if sf in dupeCheck:
+            n = 1
+            while '%s_%d' % (sf,n) in dupeCheck:
+                n += 1
+            sanitizedFields[i] = '%s_%d' % (sf,n)
+
+        dupeCheck.add(sanitizedFields[i])
+
+    sanitizedFields = tuple(sanitizedFields)
+
+    class Record(RecordType):
+        """Generated to match the data stored."""
+        _fields = tuple(rf for rf in rawFields)
+        _sanitizedFields = tuple(srf for srf in sanitizedFields)
+        _lookup = dict(kv for kv 
+                       in zip(rawFields + sanitizedFields, range(len(_fields))*2) )
+
+        _reprString = 'Record(%s)' % (', '.join("%s=%%r" % f for f in sanitizedFields),)
+
+    # monkey patch for higher speed access   
+    for ix, key in enumerate(sanitizedFields):
+        setattr(Record, key, property(lambda self, ix=ix: self._tuple[ix]))
+
+    return Record
