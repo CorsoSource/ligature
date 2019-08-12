@@ -1,4 +1,9 @@
-import functools
+import functools, math
+from itertools import izip as zip
+
+from com.inductiveautomation.ignition.common import BasicDataset
+
+from shared.data.RecordType import RecordType, genRecordType
 
 
 class RecordSetColumn(object):
@@ -46,7 +51,8 @@ class RecordSet(object):
         
         # We can initialize with a record type, a record, or an iterable of records
         # First, check if the first entry is the type,
-        #   and if so initialize the records provided        if len(args) == 1 and isinstance(args[0], BasicDataset):
+        #   and if so initialize the records provided
+        if len(args) == 1 and isinstance(args[0], BasicDataset):
             ds = args[0]
             self._RecordType = genRecordType(ds.getColumnNames())
             columnIxs = range(len(self._RecordType._fields))

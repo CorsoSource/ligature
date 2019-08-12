@@ -1,3 +1,9 @@
+from itertools import izip as zip
+import re
+
+from com.inductiveautomation.ignition.common import BasicDataset
+
+
 class RecordType(object):
     """Inspired by recipe in Python2 standard library.
     https://docs.python.org/2/library/collections.html#collections.namedtuple
@@ -82,7 +88,7 @@ def genRecordType(header):
     if isinstance(header, BasicDataset):
         rawFields = tuple(h for h in header.getColumnNames())
     else:
-        rawFields = tuple(h for h in header)	
+        rawFields = tuple(h for h in header)    
 
     unsafePattern = re.compile('[^a-zA-Z0-9_]')
     sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]

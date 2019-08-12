@@ -1,3 +1,11 @@
+from itertools import izip as zip
+from itertools import islice
+
+
+def iterSlice(iterable, selector):
+    return islice(iterable, selector.start, selector.stop, selector.step)
+
+
 class View(object):
     """Scan and iterate over data, pointing to the canonical source.
         
