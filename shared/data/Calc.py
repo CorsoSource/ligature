@@ -32,9 +32,11 @@ class Calc(object):
             for source in reversed(self.sources):
                 if column in source._RecordType._lookup:
                     ix = source._RecordType._lookup[column]
+                    getter = lambda record,ix=ix: record._tuple[ix]
+                                        
                     retrievers.append(Retriever(
                         source._records,
-                        lambda record,ix=ix: record._tuple[ix]
+                        getter
                     ))
                     break
             else: # should not complete loop - a column must be found and break!
@@ -47,10 +49,31 @@ class Calc(object):
                            for retriever
                            in self._retrievers)
         self.results._records = [self.results._RecordType(self.function(*values))
-                            for values in zip(*generators)]
+                                 for values 
+                                 in zip(*generators)]
         self._calculated = True
-        
+    
+    
+    def precalc(function):
+        @functools.wraps(function)
+        def ensureCalculated(self, *args, **kwargs):
+            if not self._calculated:
+                self._calculate()
+            return function(self, *args, **kwargs)
+        return ensureCalculated
+    
+    @precalc
     def __iter__(self):
-        if not self._calculated:
-            self._calculate()
         return (r for r in self.results)
+
+    @precalc
+    def __getitem__(self, selector):
+        
+        if isinstance(selector, (int,slice)):
+            return self.results[selector]
+        elif isinstance(selector, int):
+            return getattr(self, self._RecordType._fields[ix])
+        elif isinstnace(selector, (str,unicode)):
+            ix = self.results._RecordType._lookup[selector]
+            return getattr(self.results, self.results._RecordType._fields[ix])
+            
