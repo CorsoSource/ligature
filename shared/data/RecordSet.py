@@ -43,7 +43,7 @@ class RecordSet(object):
     Based on collections.MutableSequence
     """
     
-    __slots__ = ('_RecordType', '_records', '_subscribers')
+    __slots__ = ('_RecordType', '_records', '_subscribers', '_columns')
     
     def __init__(self, *args):        
         if not args:
