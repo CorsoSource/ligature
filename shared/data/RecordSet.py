@@ -50,8 +50,7 @@ class RecordSet(object):
             raise ValueError('RecordSets require a RecordType.')
         
         # We can initialize with a record type, a record, or an iterable of records
-        # First, check if the first entry is the type,
-        #   and if so initialize the records provided
+        # First check if it's a DataSet object. If so, convert it.
         if len(args) == 1 and isinstance(args[0], BasicDataset):
             ds = args[0]
             self._RecordType = genRecordType(ds.getColumnNames())
@@ -63,9 +62,10 @@ class RecordSet(object):
                 records.append(self._RecordType(row))
             self._records = records
         else:
-        
+            # If not, check if the first entry is the type,
+            #   and if so initialize the records provided
             try:
-                assert issubclass(args[0], RecordType)
+                assert issubclass(args[0], RecordType) == True
                 self._RecordType = args[0]
                 if len(args) > 1:
                     # RecordSet(RecordType, iterable)
@@ -108,7 +108,7 @@ class RecordSet(object):
 
             
     def percolate(function):
-        @functools.wraps
+        @functools.wraps(function)
         def firesUpdate(self, *args, **kwargs):
             results = function(self, *args, **kwargs)
             self.notify()
@@ -199,7 +199,10 @@ class RecordSet(object):
 
     @percolate
     def __iadd__(self, records):
-        self.extend(records)
+        if isinstance(records, RecordType):
+            self._records.append(records)
+        else:
+            self.extend(records)
         return self
     
     def __getitem__(self, selector):

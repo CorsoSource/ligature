@@ -16,29 +16,11 @@ class RecordType(object):
     _lookup = {}
 
     _reprString = 'Record(%s)' % (', '.join("'%s'=%%r" % f for f in _fields),)
-
-    def __init__(self, *iterable, **overrides):
-        # For completeness, we want to also construct with keywords, if we have to
-        if overrides:
-            if iterable:
-                safeIterable = iterable + tuple([None]*(len(R._fields)-len(iterable)))
-                self._tuple = tuple(overrides.get(f, overrides.get(fs, si)) 
-                                    for f,fs,si 
-                                    in zip(self._fields,self._sanitizedFields, safeIterable))
-            else:
-                self._tuple = tuple(overrides.get(f, overrides.get(fs))
-                                    for f,fs 
-                                    in zip(self._fields,self._sanitizedFields))
-        else:
-            self._tuple = tuple(*iterable)
-            
-        assert len(self._tuple) == len(self._fields), 'Expected %d args, but got %d' % (len(self._fields), len(self._tuple))
     
-        # monkey patch for higher speed access
-        # Generate this on class creation to make init faster
-        #for ix, key in enumerate(self._sanitizedFields):
-        #    setattr(self.__class__, key, property(lambda self, ix=ix: self._tuple[ix]))
 
+    def __init__(self, values):
+        self._tuple = tuple(values)
+        assert len(self._tuple) == len(self._fields), 'Expected %d args, but got %d' % (len(self._fields), len(self._tuple))
     
     def _asdict(self):
         return dict(zip(self._fields, self))
@@ -64,7 +46,7 @@ class RecordType(object):
 
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
-        return (v for v in self._tuple)
+        return iter(self._tuple)
 
 
     def __repr__(self):
