@@ -106,15 +106,6 @@ class RecordSet(object):
             getRecordColumn = lambda self, rsc=rsc: rsc
             setattr(self.__class__, key, property(getRecordColumn))
 
-            
-    def percolate(function):
-        @functools.wraps(function)
-        def firesUpdate(self, *args, **kwargs):
-            results = function(self, *args, **kwargs)
-            self.notify()
-            return results
-        return firesUpdate
-
     def coerceRecordType(self, record):
         if not isinstance(record, self._RecordType):
             return self._RecordType(record)
@@ -156,51 +147,53 @@ class RecordSet(object):
         'S.count(value) -> integer -- return number of occurrences of value'
         return sum(1 for record in self._records if record == searchRecord)
         
-        
     # MutableSequence
-    @percolate
     def __setitem__(self, index, record):
         self._records[index] = self.coerceRecordType(record)
+        self.notify(index, index)
 
-    @percolate
     def __delitem__(self, index):
         del self._records[index]
+        self.notify(index, None)
 
-    @percolate
     def insert(self, index, record):
         'insert record before index'
         self._records.insert(index, self.coerceRecordType(record))
+        self.notify(None, index)
 
-    @percolate
     def append(self, record):
         'append record to the end of the stored records'
         self._records.append(self.coerceRecordType(record))
+        self.notify(None, -1)
     
-    @percolate
     def extend(self, records):
         'extend records by bulk appending the new records to the end'
         self._records.extend([self.coerceRecordType(record) for record in records])
+        self.notify(None, slice(-len(records),None))
     
-    @percolate
     def pop(self, index=-1):
         '''remove and return record at index (default last).
            Raise IndexError if records are empty or index is out of range.
         '''
         record = self._records[index]
         del self._records[index]
-        return record
+        try:
+            return record
+        finally: # don't preempt the caller by letting another cut in line!
+            self.notify(index, None)
 
-    @percolate
     def remove(self, record):
         '''remove first occurrence of record.
            Raise ValueError if the value is not present.
         '''
-        del self._records[self.index(record)]
-
-    @percolate
+        index = self.index(record)
+        del self._records[index]
+        self.notify(index, None)
+        
     def __iadd__(self, records):
         if isinstance(records, RecordType):
             self._records.append(records)
+            self.notify(None, -1)
         else:
             self.extend(records)
         return self
@@ -213,11 +206,15 @@ class RecordSet(object):
             return getattr(self, self._RecordType._fields[ix])
 #             return (record[ix] for record in self._records)
     
-    def notify(self):
-        """Fires an update to make sure dependents are updated, if needed"""
+    def notify(self, oldSelector=None, newSelector=None):
+        """Fires an update to make sure dependents are updated, if needed.
+        This can be understood in the normal diff way.
+        Selectors may be an integer or a slice object.
+        Negative values must be understood as from the end of the list.
+        """
         for dependent in self._subscribers:
             try:
-                dependent.update(self)
+                dependent.update(self, oldSelector, newSelector)
             except AttributeError:
                 pass
 
