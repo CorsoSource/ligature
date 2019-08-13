@@ -100,11 +100,8 @@ class RecordSet(object):
         
         self._subscribers = []
         
-        # monkey patch for higher speed access   
-        for reference, key in enumerate(self._RecordType._sanitizedFields):
-            rsc = RecordSetColumn(self, reference)
-            getRecordColumn = lambda self, rsc=rsc: rsc
-            setattr(self.__class__, key, property(getRecordColumn))
+        # monkey patch for higher speed access
+        self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
 
     def coerceRecordType(self, record):
         if not isinstance(record, self._RecordType):
@@ -199,19 +196,14 @@ class RecordSet(object):
         return self
     
     def __getitem__(self, selector):
-        if isinstance(selector, slice):
+        if isinstance(selector, (int,slice)):
             return self._records[selector]
         else:
             ix = self._RecordType._lookup[selector]
-            return getattr(self, self._RecordType._fields[ix])
-#             return (record[ix] for record in self._records)
-    
+            return self._columns[ix]
+        
     def notify(self, oldSelector=None, newSelector=None):
-        """Fires an update to make sure dependents are updated, if needed.
-        This can be understood in the normal diff way.
-        Selectors may be an integer or a slice object.
-        Negative values must be understood as from the end of the list.
-        """
+        """Fires an update to make sure dependents are updated, if needed"""
         for dependent in self._subscribers:
             try:
                 dependent.update(self, oldSelector, newSelector)

@@ -51,7 +51,7 @@ class Calc(object):
         self.results._records = [self.results._RecordType(self.function(*values))
                                  for values 
                                  in zip(*generators)]
-        self._calculated = True
+        self._calculated = True # False
     
     
     def precalc(function):
