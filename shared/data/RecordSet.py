@@ -64,13 +64,11 @@ class RecordSet(object):
             records.append(self._RecordType(row))
         self._groups = [tuple(records)]
         
-    
     def _initializeEmpty(self, RecordType):
         """Simply define what kind of RecordSet this will be, but start with no data.
         """
         self._RecordType = RecordType
         self._groups = []
-        
     
     def _initializeRaw(self, RecordType, data):
         """Make a list with a single tuple entry, that was the list of new records.
@@ -80,7 +78,6 @@ class RecordSet(object):
         self._groups = [tuple([RecordType(record) 
                                for record 
                                in data])]
-    
     
     def _initializeRecords(self, records, validate=False):
         """Initialize RecordSet from the records provided.
@@ -92,9 +89,15 @@ class RecordSet(object):
             assert all(isinstance(r, RecordType) for r in records), 'All entries were not the same RecordType'
         self._groups = [tuple(records)]
 
+    def _initializeCopy(self, recordSet):
+        self._RecordType = recordSet._RecordType
+        self._groups = [group for group in recordSet._groups]
+        
+        
     def _addIndexEntry(self, group):
         gix = self._indexingFunction(group)
         self._gindex[gix] = self._gindex.get(gix,[]) + [group]
+    
     
     def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
@@ -113,7 +116,10 @@ class RecordSet(object):
             else:
                 self._initializeEmpty(recordType)
         elif initialData:
-            self._initializeRecords(initialData, validate)
+            if isinstance(initialData, RecordSet):
+                self._initializeCopy(initialData)
+            else:
+                self._initializeRecords(initialData, validate)
         else:
             raise ValueError("""Insufficient information to initialize the RecordSet."""
                              """ A RecordType must be implied by the constructor arguments.""")
