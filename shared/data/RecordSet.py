@@ -274,9 +274,9 @@ class RecordSet(object):
                 for group in self._groups 
                 for record in group)
                
-    def __repr__(self, ellideLimit=20):
+    def __repr__(self, elideLimit=20):
         'Format the representation string for better printing'
-        records = list(islice((r for r in self._records), ellideLimit))
+        records = list(islice((r for r in self._records), elideLimit))
         totalRecordCount = sum(len(g) for g in self._groups)
         out = ['RecordSet with %d groups of %d records' % (len(self), totalRecordCount)]
         # preprocess
@@ -286,13 +286,13 @@ class RecordSet(object):
                             zip(*records) 
                                if records 
                                else ['']*len(self._RecordType._fields))]
-        digits = math.floor(math.log10(ellideLimit))
+        digits = math.floor(math.log10(elideLimit))
         gixes = []
         _rscan = 0
         for group in self._groups:
             gixes.append(self._indexingFunction(group))
             _rscan += len(group)
-            if _rscan > ellideLimit:
+            if _rscan > elideLimit:
                 break
         maxGixWidth = max(len(str(gix)) for gix in gixes)
         prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
@@ -300,7 +300,7 @@ class RecordSet(object):
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
         out += [recordPattern % tuple(['',''] + ['-'*len(field) for field in self._RecordType._fields])]
         
-        remaining = ellideLimit
+        remaining = elideLimit
         for group in self._groups:
             gix = self._indexingFunction(group)
             for j,record in enumerate(group):
@@ -310,6 +310,6 @@ class RecordSet(object):
                     break
             if not remaining:
                 break
-        if totalRecordCount > ellideLimit:
-            out += ['  ... and %d ellided' % (totalRecordCount - ellideLimit)]   
+        if totalRecordCount > elideLimit:
+            out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]   
         return '\n'.join(out)
