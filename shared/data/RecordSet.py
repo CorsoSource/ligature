@@ -16,24 +16,26 @@ class RecordSetColumn(object):
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
         return (record._tuple[self._index]
-                for record 
-                in self._source._records)
+                for group in self._source._groups
+                for record in group)
     
-    def __getitem__(self, slicer):
+    def __getitem__(self, selector):
         """Returns a group or a slice of groups, where the selected column's value in the record is returned.
         """
-        if isinstance(slicer, int):
-            return (record._tuple[self._index] 
-                    for record
-                    in self._source._groups[slicer])
-        else:
-            if slicer.step:
+        if isinstance(selector, slice):
+            if selector.step:
                 raise NotImplementedError("Columns should not be sliced by steps. Window the RecordSet and group records instead.")
+            
             return (tuple(record._tuple[self._index]
                           for record
                           in group )
                     for group 
-                    in islice(self._source._groups,slicer.start,slicer.stop) )
+                    in islice(self._source._groups, selector.start, selector.stop) )
+        else:
+            return (tuple(record._tuple[self._index]
+                          for record
+                          in group )
+                    for group in self._source._gindex[selector] )
 
     def __repr__(self):
         'Format the representation string for better printing'
@@ -129,7 +131,11 @@ class RecordSet(object):
         # monkey patch for higher speed access
         self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
 
-        
+    
+    def column(self,column):
+        return self._columns[self._RecordType._lookup[column]]
+
+    
     def coerceRecordType(self, record):
         return self._RecordType(record)
  
@@ -248,6 +254,9 @@ class RecordSet(object):
         """
         if isinstance(selector, slice):
             return self._groups[selector]
+        elif isinstance(selector, tuple):
+            column,slicer = selector
+            return self.column(column)[slicer]
         else:
             return self._gindex[selector]
         
@@ -265,7 +274,7 @@ class RecordSet(object):
                 for group in self._groups 
                 for record in group)
                
-    def __repr__(self, ellideLimit=10):
+    def __repr__(self, ellideLimit=20):
         'Format the representation string for better printing'
         records = list(islice((r for r in self._records), ellideLimit))
         totalRecordCount = sum(len(g) for g in self._groups)
@@ -290,11 +299,17 @@ class RecordSet(object):
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
         out += [recordPattern % tuple(['',''] + ['-'*len(field) for field in self._RecordType._fields])]
-               
+        
+        remaining = ellideLimit
         for group in self._groups:
             gix = self._indexingFunction(group)
             for j,record in enumerate(group):
                 out += [recordPattern % tuple(['' if j else gix,j] + [repr(v) for v in record])]
+                remaining -= 1
+                if not remaining:
+                    break
+            if not remaining:
+                break
         if totalRecordCount > ellideLimit:
             out += ['  ... and %d ellided' % (totalRecordCount - ellideLimit)]   
         return '\n'.join(out)
