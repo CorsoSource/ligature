@@ -109,7 +109,7 @@ class RecordSet(object):
             self._initializeDataSet(initialData)
         elif recordType:
             # create a RecordType, if needed
-            if not isinstance(recordType, RecordType):
+            if not issubclass(recordType, RecordType):
                 recordType = genRecordType(recordType)
             if initialData:
                 self._initializeRaw(recordType, initialData)
