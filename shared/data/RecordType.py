@@ -24,6 +24,11 @@ class RecordType(object):
             
     def _asdict(self):
         return dict(zip(self._fields, self))
+
+    @classmethod
+    def getGetter(cls, field):
+        ix = cls._lookup[field]
+        return lambda myself, ix=ix: myself._tuple[ix]
     
     @classmethod
     def keys(cls):

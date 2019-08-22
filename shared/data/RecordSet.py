@@ -119,11 +119,13 @@ class RecordSet(object):
                              """ A RecordType must be implied by the constructor arguments.""")
         self._subscribers = []
         
+        # The indexing function is not bound to the class or instance (because of __slots__)
+        #   So it only requires one argument (the group), but may optionally take self
         if indexingFunction:
             self._indexingFunction = indexingFunction
         else:
             # default indexing function: simply the index of the group in the listing.
-            self._indexingFunction = lambda group: self._groups.index(group)
+            self._indexingFunction = lambda group, myself=self: myself._groups.index(group)
             
         self._gindex = {}
         for group in self._groups:
