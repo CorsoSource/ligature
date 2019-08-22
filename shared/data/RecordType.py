@@ -19,12 +19,12 @@ class RecordType(object):
     
 
     def __init__(self, values):
-        self._tuple = tuple(values)
+        self._tuple = self._cast(values)
         assert len(self._tuple) == len(self._fields), 'Expected %d args, but got %d' % (len(self._fields), len(self._tuple))
-    
+            
     def _asdict(self):
         return dict(zip(self._fields, self))
-
+    
     @classmethod
     def keys(cls):
         return cls._fields
@@ -59,7 +59,7 @@ class RecordType(object):
     def __getstate__(self):
         'Exclude the OrderedDict from pickling'
         pass
-
+        
 
 def genRecordType(header):
     """Returns something like a namedtuple. 
@@ -99,5 +99,10 @@ def genRecordType(header):
     # monkey patch for higher speed access   
     for ix, key in enumerate(sanitizedFields):
         setattr(Record, key, property(lambda self, ix=ix: self._tuple[ix]))
-
+        
+    if len(Record._fields) == 1:
+        setattr(Record, '_cast', lambda self,v: (v,))
+    else:
+        setattr(Record, '_cast', lambda self,v: tuple(v))
+        
     return Record
