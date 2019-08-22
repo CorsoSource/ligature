@@ -15,9 +15,10 @@ class RecordSetColumn(object):
 
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
-        return (record._tuple[self._index]
-                for group in self._source._groups
-                for record in group)
+        return ((record._tuple[self._index]
+                  for record 
+                  in group)
+                for group in self._source._groups)
     
     def __getitem__(self, selector):
         """Returns a group or a slice of groups, where the selected column's value in the record is returned.
@@ -26,15 +27,15 @@ class RecordSetColumn(object):
             if selector.step:
                 raise NotImplementedError("Columns should not be sliced by steps. Window the RecordSet and group records instead.")
             
-            return (tuple(record._tuple[self._index]
-                          for record
-                          in group )
+            return ((record._tuple[self._index]
+                      for record
+                      in group )
                     for group 
                     in islice(self._source._groups, selector.start, selector.stop) )
         else:
-            return (tuple(record._tuple[self._index]
-                          for record
-                          in group )
+            return ((record._tuple[self._index]
+                      for record
+                      in group )
                     for group in self._source._gindex[selector] )
 
     def __repr__(self):
