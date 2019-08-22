@@ -46,7 +46,9 @@ class RecordSet(object):
     Based on collections.MutableSequence
     """
     
-    __slots__ = ('_RecordType', '_groups', '_gindex', '_columns', '_subscribers')
+    __slots__ = ('_RecordType', '_groups', '_columns',
+                 '_gindex', '_indexingFunction',
+                 '_subscribers')
 
     def _initializeDataSet(self, dataset, validate=False):
         """Convert the DataSet type into a RecordSet
@@ -86,9 +88,12 @@ class RecordSet(object):
         if validate:
             assert all(isinstance(r, RecordType) for r in records), 'All entries were not the same RecordType'
         self._groups = [tuple(records)]
+
+    def _addIndexEntry(self, group):
+        gix = self._indexingFunction(group)
+        self._gindex[gix] = self._gindex.get(gix,[]) + [group]
     
-    
-    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False):        
+    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
         """
@@ -111,6 +116,16 @@ class RecordSet(object):
                              """ A RecordType must be implied by the constructor arguments.""")
         self._subscribers = []
         
+        if indexingFunction:
+            self._indexingFunction = indexingFunction
+        else:
+            # default indexing function: simply the index of the group in the listing.
+            self._indexingFunction = lambda group: self._groups.index(group)
+            
+        self._gindex = {}
+        for group in self._groups:
+            self._addIndexEntry(group)
+            
         # monkey patch for higher speed access
         self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
 
@@ -157,14 +172,16 @@ class RecordSet(object):
     def index(self, search):
         """Returns the index of the group the search item is found in."""
         if isinstance(search, self._RecordType):
-            for groupIx, group in self._groups:
-                for record in group:
-                    if search == record:
-                        return groupIx
+            for groupIx, groups in self._gindex.items():
+                for group in groups:
+                    for record in group:
+                        if search == record:
+                            return groupIx
         else:
-            for groupIx, group in self._groups:
-                if search == group:
-                    return groupIx
+            for groupIx, groups in self._gindex.items():
+                for group in groups:
+                    if search == group:
+                        return groupIx
         raise ValueError('Search item %r was not found' % search)
 
     def count(self, search):
@@ -176,29 +193,42 @@ class RecordSet(object):
                        for group in self._groups
                        for record in group
                        if record == search )
-        else:
+        elif isinstance(search, tuple):
             return sum(1 for group in self._groups if search == group)
+        else:
+            return len(self._gindex.get(search, []))
 
     def append(self, addition):
         """Append the group of records to the end of _groups.
            If a record is given, an group of one will be appended.
         """
-        if isinstance(addition, self._RecordType):
-            self._groups.append(tuple(self.coerceRecordType(addition),))
-        elif isinstance(addition, RecordSet):
+        if isinstance(addition, RecordSet):
             self.extend(addition)
-        else: # tuple creation is slightly faster if the generator is consumed by a list first
-            self._groups.append(tuple([self.coerceRecordType(entry)
-                                       for entry
-                                       in addition ]))
-        self.notify(None, -1)
+        else:
+            if isinstance(addition, self._RecordType):
+                newGroup = tuple(self.coerceRecordType(addition),)
+            else: 
+                # tuple creation is slightly faster if the generator is consumed by a list first
+                newGroup = tuple([self.coerceRecordType(entry)
+                                  for entry
+                                  in addition ])
+            self._groups.append(newGroup)
+            self._addIndexEntry(newGroup)
+            self.notify(None, -1)
     
     def extend(self, additionalGroups):
         """Extend the records by concatenating the record groups of another RecordSet.
         """
         if isinstance(additionalGroups, RecordSet):
             assert self._RecordType._fields == recordSet._RecordType._fields, 'RecordSets can only be extended by other RecordSets of the same RecordType.'
-            self._groups.extend(recordSet._groups)
+            self._groups.extend(additionalGroups._groups)
+            # We use our own indexing function, unless it's identical (minor effort savings)
+            if additionalGroups._indexingFunction == self._indexingFunction:
+                for groupIx, groups in additionalGroups._gindex.items():
+                    self._gindex = self._gindex.get(groupIx, []) + groups
+            else:
+                for group in additionalGroups._groups:
+                    self._addIndexEntry(group)
         else:
             for group in additionalGroups:
                 self.append(group)
@@ -213,14 +243,13 @@ class RecordSet(object):
         return self
     
     def __getitem__(self, selector):
-        """Get a particular group if an int or slice is provided. 
-           If another identifier is provided, assume it's a column and return that.
+        """Get a particular set of groups if a slice is provided, 
+             otherwise assume it's an index reference. 
         """
-        if isinstance(selector, (int,slice)):
+        if isinstance(selector, slice):
             return self._groups[selector]
         else:
-            ix = self._RecordType._lookup[selector]
-            return self._columns[ix]
+            return self._gindex[selector]
         
     def notify(self, oldSelector=None, newSelector=None):
         """Fires an update to make sure dependents are updated, if needed"""
@@ -249,14 +278,23 @@ class RecordSet(object):
                                if records 
                                else ['']*len(self._RecordType._fields))]
         digits = math.floor(math.log10(ellideLimit))
-        prefixPattern = ' %%%ds  %%%ds |' % (digits, digits)
+        gixes = []
+        _rscan = 0
+        for group in self._groups:
+            gixes.append(self._indexingFunction(group))
+            _rscan += len(group)
+            if _rscan > ellideLimit:
+                break
+        maxGixWidth = max(len(str(gix)) for gix in gixes)
+        prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
         out += [recordPattern % tuple(['',''] + ['-'*len(field) for field in self._RecordType._fields])]
                
-        for i,group in enumerate(self._groups):
+        for group in self._groups:
+            gix = self._indexingFunction(group)
             for j,record in enumerate(group):
-                out += [recordPattern % tuple(['' if j else i,j] + [repr(v) for v in record])]
+                out += [recordPattern % tuple(['' if j else gix,j] + [repr(v) for v in record])]
         if totalRecordCount > ellideLimit:
             out += ['  ... and %d ellided' % (totalRecordCount - ellideLimit)]   
         return '\n'.join(out)
