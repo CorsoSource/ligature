@@ -11,7 +11,7 @@ class Calc(object):
     __slots__ = ('sources', 'function', 'scanners', 
                  '_mapInputs', '_resultSet', '_calculated')
     
-    def __init__(self, sources, function, outputLabels, selector=None, mapInputs={}):
+    def __init__(self, sources, function, outputLabels, mapInputs={}):
         self._calculated = False
         self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
         self.sources = tuple(sources)
