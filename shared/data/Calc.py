@@ -1,16 +1,18 @@
 from shared.data.Scanners import Scanner
+from shared.data.Updates import UpdateModel
 
 
 def getArguments(function):
     return function.__code__.co_varnames[:function.__code__.co_argcount]
 
 
-class Calc(object):
+class Calc(UpdateModel):
     """Base class for sweeping over RecordSets.
     """
-    __slots__ = ('sources', 'function', 'scanners', 
+    __slots__ = ('function', 'scanners', 
                  '_mapInputs', '_resultSet', '_calculated')
     
+    @InitMixins
     def __init__(self, sources, function, outputLabels, mapInputs={}):
         self._calculated = False
         self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
@@ -33,13 +35,14 @@ class Calc(object):
                     
                 if column in source._RecordType._lookup:
                     scanners.append(Scanner(source, column))
+                    source.subscribe(self)
                     break
                     
             else: # should not complete loop - a column must be found and break!
                 raise ValueError('Column "%s" not found in sources!' % column) #' \n\t%s' % (column, '\n\t'.join('{%s}' % s._lookup.keys() for s in reversed(self.sources)))
 
         self.scanners = tuple(scanners)
-
+            
     def _calculate(self):
         for source in self.sources:
             if not getattr(source, '_calculated', True):
@@ -49,7 +52,7 @@ class Calc(object):
                              for values 
                              in zip(*self.scanners))
         self._calculated = True # False
-    
+        self.notify(-1,None) # one group added
     
     def precalc(function):
         @functools.wraps(function)

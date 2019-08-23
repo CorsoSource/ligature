@@ -4,6 +4,7 @@ from itertools import izip as zip
 from com.inductiveautomation.ignition.common import BasicDataset
 
 from shared.data.RecordType import RecordType, genRecordType
+from shared.data.Updates import UpdateModel
 
 
 class RecordSetColumn(object):
@@ -43,16 +44,16 @@ class RecordSetColumn(object):
         return 'RecordSetColumn("%s" at %d)' % (self._source._RecordType._fields[self._index], self._index)
         
 
-class RecordSet(object):
+class RecordSet(UpdateModel):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence
     """
     
     __slots__ = ('_RecordType', '_groups', '_columns',
-                 '_gindex', '_indexingFunction',
-                 '_subscribers')
+                 '_gindex', '_indexingFunction')
 
+    # INIT
     def _initializeDataSet(self, dataset, validate=False):
         """Convert the DataSet type into a RecordSet
         """
@@ -93,12 +94,8 @@ class RecordSet(object):
         self._RecordType = recordSet._RecordType
         self._groups = [group for group in recordSet._groups]
         
-        
-    def _addIndexEntry(self, group):
-        gix = self._indexingFunction(group)
-        self._gindex[gix] = self._gindex.get(gix,[]) + [group]
     
-    
+    @InitMixins
     def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
@@ -109,7 +106,7 @@ class RecordSet(object):
             self._initializeDataSet(initialData)
         elif recordType:
             # create a RecordType, if needed
-            if not issubclass(recordType, RecordType):
+            if not (isinstance(recordType, type) and issubclass(recordType, RecordType)):
                 recordType = genRecordType(recordType)
             if initialData:
                 self._initializeRaw(recordType, initialData)
@@ -123,7 +120,6 @@ class RecordSet(object):
         else:
             raise ValueError("""Insufficient information to initialize the RecordSet."""
                              """ A RecordType must be implied by the constructor arguments.""")
-        self._subscribers = []
         
         # The indexing function is not bound to the class or instance (because of __slots__)
         #   So it only requires one argument (the group), but may optionally take self
@@ -139,7 +135,12 @@ class RecordSet(object):
             
         # monkey patch for higher speed access
         self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
+    
 
+    def _addIndexEntry(self, group):
+        gix = self._indexingFunction(group)
+        self._gindex[gix] = self._gindex.get(gix,[]) + [group]
+    
     
     def column(self,column):
         return self._columns[self._RecordType._lookup[column]]
@@ -268,14 +269,7 @@ class RecordSet(object):
             return self.column(column)[slicer]
         else:
             return self._gindex[selector]
-        
-    def notify(self, oldSelector=None, newSelector=None):
-        """Fires an update to make sure dependents are updated, if needed"""
-        for dependent in self._subscribers:
-            try:
-                dependent.update(self, oldSelector, newSelector)
-            except AttributeError:
-                pass
+
     
     @property
     def _records(self):
@@ -303,7 +297,7 @@ class RecordSet(object):
             _rscan += len(group)
             if _rscan > elideLimit:
                 break
-        maxGixWidth = max(len(str(gix)) for gix in gixes)
+        maxGixWidth = max([len(str(gix)) for gix in gixes] + [0])
         prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
