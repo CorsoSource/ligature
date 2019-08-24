@@ -245,10 +245,10 @@ class RecordSet(UpdateModel):
             else:
                 for group in additionalGroups._groups:
                     self._addIndexEntry(group)
+            self.notify(None, slice(-len(additionalGroups),None))
         else:
             for group in additionalGroups:
                 self.append(group)
-        self.notify(None, slice(-len(additionalGroups),None))
     
     def __iadd__(self, addition):
         """Overload the shorthand += for convenience."""
