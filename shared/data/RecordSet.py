@@ -95,11 +95,13 @@ class RecordSet(UpdateModel):
         self._groups = [group for group in recordSet._groups]
         
     
-    @InitMixins
     def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
         """
+        # Initialize mixins
+        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate, indexingFunction)
+        
         # We can initialize with a record type, a record, or an iterable of records
         # First check if it's a DataSet object. If so, convert it.
         if isinstance(initialData, BasicDataset):

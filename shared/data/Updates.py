@@ -1,7 +1,16 @@
 class UpdateModel(object):
+    """Provide the object with a way to notify other objects
+      that depend on it.
+    """
+    
+    # Slots ensures we're explicit and fast
     __slots__ = ('sources', 'listeners')
     
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        """Initialize the chain.
+        By tracking both sources and listeners, we can make a graph of what
+          gets updated by what.
+        """
         self.sources = tuple()
         self.listeners = list()
         
