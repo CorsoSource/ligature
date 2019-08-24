@@ -15,8 +15,7 @@ class RecordType(object):
     _sanitizedFields = tuple()
     _lookup = {}
 
-    _reprString = 'Record(%s)' % (', '.join("'%s'=%%r" % f for f in _fields),)
-    
+    #_reprString = 'Record(%s)' % (', '.join("'%s'=%%r" % f for f in _fields),)
 
     def __init__(self, values):
         self._tuple = self._cast(values)
@@ -56,7 +55,9 @@ class RecordType(object):
 
     def __repr__(self):
         'Format the representation string for better printing'
-        return self._reprString % self._tuple
+        return repr(self._asdict())
+        #return self._reprString % self._tuple
+    
     def __getnewargs__(self):
         'Return self as a plain tuple.  Used by copy and pickle.'
         return tuple(self)
