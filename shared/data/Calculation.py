@@ -114,9 +114,12 @@ class Cluster(Calculation):
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(1,3,3,5),(5,7),(7,9,9)] # 3 groups
         """
-        self._resultSet.extend([self.function(*groupedValues)
-                                for groupedValues
-                                in zip(*self.scanners)])
+        self._resultSet.extend(
+            [self._resultSet._RecordType(
+                self.function(*groupedValues))
+             for groupedValues
+             in zip(*self.scanners)])
+        self._calculated = True
         self._calculated = True
         
     def update(self, oldSelector, newSelector):
