@@ -1,5 +1,5 @@
-from shared.data.Scanners import Scanner
-from shared.data.Updates import UpdateModel
+from shared.data.scanners import Scanner
+from shared.data.update import UpdateModel
 
 
 def getArguments(function):
@@ -99,7 +99,7 @@ class Sweep(Calculation):
     def update(self, oldSelector, newSelector):
         # self._calculated = False
         raise NotImplementedError
-        
+
 
 class Cluster(Calculation):
     

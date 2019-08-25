@@ -3,8 +3,8 @@ from itertools import izip as zip
 
 from com.inductiveautomation.ignition.common import BasicDataset
 
-from shared.data.RecordType import RecordType, genRecordType
-from shared.data.Updates import UpdateModel
+from shared.data.recordtype import RecordType, genRecordType
+from shared.data.update import UpdateModel
 
 
 class RecordSetColumn(object):
