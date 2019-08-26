@@ -4,8 +4,7 @@ class Scanner(object):
       zip()'d with it gets more data.
     """
     __slots__ = ('source', 'getter', 
-                 '_group_cursor', '_row_cursor'
-                 '_exhausted')
+                 '_group_cursor', '_row_cursor')
     
     def __init__(self, source, field):
         self.source = source
