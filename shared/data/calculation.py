@@ -78,7 +78,7 @@ class Calculation(UpdateModel):
         self._calculated = False
 
     def _calculate(self):
-        raise NotImplementedError
+        raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
 
 
 class Sweep(Calculation):
