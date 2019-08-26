@@ -1,23 +1,21 @@
 from shared.data.scanners import Scanner
-from shared.data.update import UpdateModel
+from shared.data.compose import Composable
 
 
 def getArguments(function):
     return function.__code__.co_varnames[:function.__code__.co_argcount]
 
 
-class Calculation(UpdateModel):
+class Calculation(Composable):
     """Base class for sweeping over RecordSets.
     """
-    __slots__ = ('function', 'scanners', 
-                 '_mapInputs', '_resultSet', '_calculated')
+    __slots__ = ('function', 'scanners', '_mapInputs')
     
     ScanClass = Scanner
     
     def __init__(self, sources, function, outputLabels, mapInputs={}):
         # Initialize mixins
         super(Calculation, self).__init__(sources, function, outputLabels, mapInputs={})
-        self._calculated = False
         self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
         self.sources = tuple(sources)
         self.function = function
@@ -33,7 +31,7 @@ class Calculation(UpdateModel):
         columns = [self._mapInputs.get(arg,arg) for arg in getArguments(self.function)]
         for column in columns:
             for source in reversed(self.sources):
-                if isinstance(source, Calculation):
+                if isinstance(source, Composable):
                     source = source.results
                     
                 if column in source._RecordType._lookup:
@@ -60,41 +58,15 @@ class Calculation(UpdateModel):
             if scanner.exhausted:
                 break
             else:
-                print 'debouncing %r' % scanner
                 scanner.rewind()
     
-    def calculate(self):
-        for source in self.sources:
-            if isinstance(source, Calculation):
-                source.calculate()
-        if not self._calculated:
-            self._calculate()
-            self._debounce_scanners()
-            
-    def precalc(function):
-        @functools.wraps(function)
-        def ensureCalculated(self, *args, **kwargs):
-            if not self._calculated:
-                self.calculate()
-            return function(self, *args, **kwargs)
-        return ensureCalculated
-    
-    @precalc
-    def __iter__(self):
-        return (group for group in self.results)
+    def apply(self):
+        super(Calculation, self).apply()
+        self._debounce_scanners()
 
-    @precalc
-    def __getitem__(self, selector):
-        return self._resultSet[selector]
-
-    @property
-    @precalc
-    def results(self):
-        return self._resultSet   
-        
-    
-    def update(self, oldSelector, newSelector):
-        self._calculated = False
+    def _apply(self):
+        self._calculate()
+        self._needsUpdate = False
 
     def _calculate(self):
         raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
@@ -116,7 +88,6 @@ class Sweep(Calculation):
         self._resultSet.append(self.function(*values)
                                for values 
                                in zip(*self.scanners))
-        self._calculated = True
 
 
 class Cluster(Calculation):
@@ -137,7 +108,6 @@ class Cluster(Calculation):
                 self.function(*groupedValues))
              for groupedValues
              in zip(*self.scanners)])
-        self._calculated = True
 
 
 class Window(Calculation):
