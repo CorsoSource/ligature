@@ -1,6 +1,3 @@
-
-
-
 class Scanner(object):
     """An iterator that holds the position of a cursor while it scans.
     This way, an incompletely scanned recordset can resume once another that's
@@ -31,10 +28,12 @@ class RowScanner(Scanner):
     def __iter__(self):
         for group in self.source._groups[self._group_cursor+1:]: # error here merely stops iteration
             self._group_cursor += 1
-            self._row_cursor = -1
             for record in self._iterGroup(group):
                 yield self.getter(record)
+            # after a group is iterated, return the row cursor to the beginning
+            self._row_cursor = -1
                 
+
 class GroupScanner(Scanner):
     def __iter__(self):
         for group in self.source._groups[self._group_cursor+1:]: # error here merely stops iteration
@@ -44,20 +43,38 @@ class GroupScanner(Scanner):
                 
 class ReplayingScanner(Scanner):
     """Continues to yield from the same place until ready is called."""
-    def ready(self):
-        #increment the scanning index now
-        raise NotImplementedError
+    
+    __slots__ = ('_last_group', '_last_row')
+    
+    def reset(self):
+        super(ReplayingScanner, self).reset()
+        self.ratchet()
+        
+    def ratchet(self):
+        """Moves the last acknowledged position to the current."""
+        self._last_group = self._group_cursor
+        self._last_row = self._row_cursor
 
-class ReplayingRowScanner(ReplayingScanner):
+
+class ReplayingRowScanner(RowScanner, ReplayingScanner):
+    """Emits rows until exhausted like a normal generator,
+       but if the ratchet isn't set, the next call to the generator
+       will simply resume from where the last ratchet was.
+    """
     def __iter__(self):
-        raise NotImplementedError
-    def ready(self):
-        raise NotImplementedError
+        self._row_cursor = self._last_row
+        if self._last_row != -1:
+            self._group_cursor = self._last_group - 1
+        else:
+            self._group_cursor = self._last_group
+        return super(ReplayingRowScanner,self).__iter__()
+
     
-class ReplayingGroupScanner(ReplayingScanner):
+class ReplayingGroupScanner(GroupScanner, ReplayingScanner):
+    """Emits groups until exhausted like a normal generator,
+       but if the ratchet isn't set, the next call will 
+       repeat from where the last ratchet was.
+    """
     def __iter__(self):
-        raise NotImplementedError
-    def ready(self):
-        raise NotImplementedError
-    
-    
+        self._group_cursor = self._last_group
+        return super(ReplayingGroupScanner,self).__iter__()        
