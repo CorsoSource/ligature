@@ -31,7 +31,7 @@ class UpdateModel(object):
         """
         for dependent in self.listeners:
             try:
-                dependent.update(self, oldSelector, newSelector)
+                dependent.update(oldSelector, newSelector)
             except NotImplementedError:
                 pass
             except AttributeError:
