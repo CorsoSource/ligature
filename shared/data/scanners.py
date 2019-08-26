@@ -3,7 +3,8 @@ class Scanner(object):
     This way, an incompletely scanned recordset can resume once another that's
       zip()'d with it gets more data.
     """
-    __slots__ = ('source', 'getter', '_group_cursor', '_row_cursor')
+    __slots__ = ('source', 'getter', 
+                 '_group_cursor', '_row_cursor')
     
     def __init__(self, source, field):
         self.source = source
@@ -22,18 +23,54 @@ class Scanner(object):
             if self._row_cursor == len(group): self._row_cursor= 0
             yield record
     
+    @property
+    def exhausted(self):
+        return self._row_cursor == 0 and self._group_cursor == len(self.source._groups)
+    
+    def __repr__(self):
+        return '%s on group %d and row %d' % (type(self), self._group_cursor, self._row_cursor)
+    
+    def rewind(self, steps=1):
+        raise NotImplementedError("The base scanner class' rewind(steps) must be overridden. This allows accidental consumption to be undone.")
+        
     def __iter__(self):
-        raise NotImplementedError 
+        raise NotImplementedError("The base scanner class' __iter__() must be overridden.")
         
         
 class RowScanner(Scanner):
-    def __iter__(self):
-        for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
-            self._group_cursor += 1
-            for record in self._iterGroup(group):
-                yield self.getter(record)
-            # after a group is iterated, return the row cursor to the beginning
-            self._row_cursor = 0
+    def __iter__(self):      
+        try:
+            for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
+                self._group_cursor += 1
+                for record in self._iterGroup(group):
+                    yield self.getter(record)
+                # after a group is iterated, return the row cursor to the beginning
+                self._row_cursor = 0
+        finally:
+            # incomplete iteration - roll back group cursor to realign row cursor
+            if self._row_cursor and self._group_cursor:
+                self._group_cursor -= 1
+                
+    def rewind(self, steps=1):
+        """Go back the given number of steps in the iteration."""
+        while steps > 0:
+            steps -= 1
+            # If the row cursor is nonzero, back it off by one
+            if self._row_cursor > 0:
+                # remember, the group cursor aggressively iterates
+                if self._group_cursor >= len(self.source._groups):
+                    self._group_cursor = len(self.source._groups)-1 
+                else:
+                    self._row_cursor -= 1
+            # If the row cursor is at the start rewind the group
+            elif self._group_cursor:
+                if self._group_cursor >= len(self.source._groups):
+                    self._group_cursor = len(self.source._groups)-1 
+                else:
+                    self._group_cursor -= 1
+                self._row_cursor = len(self.source._groups[self._group_cursor]) -1
+            else: # already at the start
+                return
                 
 
 class GroupScanner(Scanner):
@@ -41,6 +78,16 @@ class GroupScanner(Scanner):
         for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
             self._group_cursor += 1
             yield tuple(self.getter(record) for record in group)
+            
+    def rewind(self, steps=1):
+        """Go back the given number of steps in the iteration."""
+        while steps > 0:
+            steps -= 1
+            # If we have a nonzero group cursor, then just decrement it
+            if self._group_cursor > 0:
+                self._group_cursor -= 1
+            else: # already at the start
+                return
                 
                 
 class ReplayingScanner(Scanner):

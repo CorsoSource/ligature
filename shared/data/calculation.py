@@ -45,13 +45,31 @@ class Calculation(UpdateModel):
                 raise ValueError('Column "%s" not found in sources!' % column) #' \n\t%s' % (column, '\n\t'.join('{%s}' % s._lookup.keys() for s in reversed(self.sources)))
 
         self.scanners = tuple(scanners)
-        
+    
+    def _debounce_scanners(self):
+        """As we iterate the scanners, one may exhaust prematurely,
+           leaving them in an unaligned state (the first scanners
+           may have iterated while the stopped won't).
+        """
+        # Check if any scanners failed to finish or needs to be reprimed
+        if all(scanner.exhausted for scanner in self.scanners):
+            return
+        for scanner in self.scanners:
+            # Once the exhausted scanner is reached, stop. 
+            # Only the previous would have over-emitted.
+            if scanner.exhausted:
+                break
+            else:
+                print 'debouncing %r' % scanner
+                scanner.rewind()
+    
     def calculate(self):
         for source in self.sources:
             if isinstance(source, Calculation):
                 source.calculate()
         if not self._calculated:
             self._calculate()
+            self._debounce_scanners()
             
     def precalc(function):
         @functools.wraps(function)
@@ -72,13 +90,14 @@ class Calculation(UpdateModel):
     @property
     @precalc
     def results(self):
-        return self._resultSet
+        return self._resultSet   
+        
     
     def update(self, oldSelector, newSelector):
         self._calculated = False
 
     def _calculate(self):
-        raise NotImplementedError
+        raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
 
 
 class Sweep(Calculation):
