@@ -33,7 +33,7 @@ class Calculation(UpdateModel):
         columns = [self._mapInputs.get(arg,arg) for arg in getArguments(self.function)]
         for column in columns:
             for source in reversed(self.sources):
-                if isinstance(source, Calc):
+                if isinstance(source, Calculation):
                     source = source.results
                     
                 if column in source._RecordType._lookup:
@@ -73,10 +73,13 @@ class Calculation(UpdateModel):
     @precalc
     def results(self):
         return self._resultSet
+    
+    def update(self, oldSelector, newSelector):
+        self._calculated = False
 
     def _calculate(self):
-        raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
-        
+        raise NotImplementedError
+
 
 class Sweep(Calculation):
     
@@ -95,10 +98,6 @@ class Sweep(Calculation):
                                for values 
                                in zip(*self.scanners))
         self._calculated = True
-        
-    def update(self, oldSelector, newSelector):
-        # self._calculated = False
-        raise NotImplementedError
 
 
 class Cluster(Calculation):
@@ -120,11 +119,6 @@ class Cluster(Calculation):
              for groupedValues
              in zip(*self.scanners)])
         self._calculated = True
-        self._calculated = True
-        
-    def update(self, oldSelector, newSelector):
-        # self._calculated = False
-        raise NotImplementedError
 
 
 class Window(Calculation):
@@ -140,10 +134,6 @@ class Window(Calculation):
         calc = [(8,10,23)]               # 1 group of 3
         """
         raise NotImplementedError
-        
-    def update(self, oldSelector, newSelector):
-        # self._calculated = False
-        raise NotImplementedError
 
 
 class Aggregate(Calculation):
@@ -158,8 +148,4 @@ class Aggregate(Calculation):
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(8,),(10,),(23,)]        # 3 groups of 1
         """
-        raise NotImplementedError
-        
-    def update(self, oldSelector, newSelector):
-        # self._calculated = False
         raise NotImplementedError
