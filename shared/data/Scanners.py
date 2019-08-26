@@ -21,8 +21,8 @@ class Scanner(object):
             yield record
     
     def __iter__(self):
-        raise NotImplementedError        
-
+        raise NotImplementedError("The base scanner class' __iter__() must be overridden.")
+        
         
 class RowScanner(Scanner):
     def __iter__(self):
