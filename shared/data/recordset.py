@@ -291,7 +291,7 @@ class RecordSet(UpdateModel):
                             zip(*records) 
                                if records 
                                else ['']*len(self._RecordType._fields))]
-        digits = math.floor(math.log10(elideLimit))
+        digits = math.floor(math.log10(elideLimit)) + 1
         gixes = []
         _rscan = 0
         for group in self._groups:
