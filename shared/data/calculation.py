@@ -105,36 +105,49 @@ class Cluster(Calculation):
         """
         self._resultSet.extend(
             [self._resultSet._RecordType(
-                self.function(*groupedValues))
-             for groupedValues
-             in zip(*self.scanners)])
+                self.function(*rowValues))
+             for groupedValues in zip(*self.scanners)
+             for rowValues in zip(*groupedValues)
+            ])
 
 
-class Window(Calculation):
+class Window(Sweep, Calculation):
 
-    ScanClass = ReplayingGroupScanner
+    ScanClass = GroupScanner
     
     def _calulate(self):
         """Run the aggregate function by group creating one new group.
            If groups don't matter after windowing, this is easiest.
+           Each resulting group is an update.
         f(a,b)=sum(a)-sum(b) 
         rs.a = [(1,2,3,4),(5,6),(7,8,9)]
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(8,10,23)]               # 1 group of 3
         """
-        raise NotImplementedError
+        super(Window, self)._calculate()
 
 
 class Aggregate(Calculation):
     
-    ScanClass = ReplayingGroupScanner
+    ScanClass = RowScanner
     
     def _calculate(self):
         """Run the aggregate function by group, each creating a new group.
            Useful for aggregates that may be used with another calc's groups.
+           Collapses down a group to a single value.
         f(a,b)=sum(a)-sum(b) 
-        rs.a = [(1,2,3,4),(5,6),(7,8,9)]
-        rs.b = [(0,1,0,1),(0,1),(0,1,0)]
-        calc = [(8,),(10,),(23,)]        # 3 groups of 1
+        rs.a = [(1,2,3,4),(5,6),(7,8,9)]  = 45
+        rs.b = [(0,1,0,1),(0,1),(0,1,0)]  = 4
+        calc = [(41,)]                    # 1 group of 1
         """
-        raise NotImplementedError
+        for scanner in self.scanners:
+            scanner.reset()
+        
+        self._resultSet._groups = [(
+            self._resultSet.coerceRecordType( 
+                self.function(*self.scanners)
+                )
+            ,)]
+        g = self._resultSet._groups[0]
+        gix = self._resultSet._indexingFunction(g)
+        self._resultSet._gindex = {gix:g}
