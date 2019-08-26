@@ -60,7 +60,6 @@ class Calculation(UpdateModel):
             if scanner.exhausted:
                 break
             else:
-                print 'debouncing %r' % scanner
                 scanner.rewind()
     
     def calculate(self):
