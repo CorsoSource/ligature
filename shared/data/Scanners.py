@@ -12,33 +12,35 @@ class Scanner(object):
             
     def reset(self):
         # offset low for iteration restarts if more segments get added
-        self._group_cursor = -1
-        self._row_cursor = -1
+        self._group_cursor = 0
+        self._row_cursor = 0
 
     def _iterGroup(self, group):
-        for record in group[self._row_cursor+1:]:
-            self._row_cursor += 1
+        for record in group[self._row_cursor:]:
+            # records in groups never get appended, so ensure it never gets over
+            self._row_cursor += 1 
+            if self._row_cursor == len(group): self._row_cursor= 0
             yield record
     
     def __iter__(self):
-        raise NotImplementedError("The base scanner class' __iter__() must be overridden.")
+        raise NotImplementedError 
         
         
 class RowScanner(Scanner):
     def __iter__(self):
-        for group in self.source._groups[self._group_cursor+1:]: # error here merely stops iteration
+        for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
             self._group_cursor += 1
             for record in self._iterGroup(group):
                 yield self.getter(record)
             # after a group is iterated, return the row cursor to the beginning
-            self._row_cursor = -1
+            self._row_cursor = 0
                 
 
 class GroupScanner(Scanner):
     def __iter__(self):
-        for group in self.source._groups[self._group_cursor+1:]: # error here merely stops iteration
+        for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
             self._group_cursor += 1
-            yield (self.getter(record) for record in group)
+            yield tuple(self.getter(record) for record in group)
                 
                 
 class ReplayingScanner(Scanner):
@@ -52,8 +54,19 @@ class ReplayingScanner(Scanner):
         
     def ratchet(self):
         """Moves the last acknowledged position to the current."""
-        self._last_group = self._group_cursor
-        self._last_row = self._row_cursor
+        # Note that the cursors are preemptively incremented
+        if self._group_cursor:
+            # did we finish iteration of that group? If so jump to next
+            if self._row_cursor == 0 or self._row_cursor == len(self.source._groups[self._group_cursor-1]):
+                self._last_group = self._group_cursor
+                self._last_row = 0
+            else:
+                self._last_group = self._group_cursor - 1
+                self._last_row = self._row_cursor
+        # Reset()
+        else:
+            self._last_group = self._group_cursor
+            self._last_row = self._row_cursor
 
 
 class ReplayingRowScanner(RowScanner, ReplayingScanner):
@@ -63,10 +76,8 @@ class ReplayingRowScanner(RowScanner, ReplayingScanner):
     """
     def __iter__(self):
         self._row_cursor = self._last_row
-        if self._last_row != -1:
-            self._group_cursor = self._last_group - 1
-        else:
-            self._group_cursor = self._last_group
+        self._group_cursor = self._last_group
+            
         return super(ReplayingRowScanner,self).__iter__()
 
     
@@ -77,4 +88,4 @@ class ReplayingGroupScanner(GroupScanner, ReplayingScanner):
     """
     def __iter__(self):
         self._group_cursor = self._last_group
-        return super(ReplayingGroupScanner,self).__iter__()        
+        return super(ReplayingGroupScanner,self).__iter__()              
