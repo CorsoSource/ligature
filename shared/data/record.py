@@ -33,6 +33,7 @@ class RecordType(object):
     def keys(cls):
         return cls._fields
 
+    @property
     def values(self):
         return self._tuple
 
