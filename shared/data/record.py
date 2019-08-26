@@ -35,6 +35,11 @@ class RecordType(object):
 
     @property
     def values(self):
+        """Returns the tuple.
+        >>> R = genRecordType('abc')
+        >>> R((1,2,3)).values
+        (1, 2, 3)
+        """
         return self._tuple
 
     def _replace(_self, **keyValues):
@@ -73,14 +78,17 @@ def genRecordType(header):
     Designed to have lightweight instances while having many convenient ways
     to access the data.
     """
-
     if isinstance(header, BasicDataset):
         rawFields = tuple(h for h in header.getColumnNames())
     else:
         rawFields = tuple(h for h in header)    
 
+    numericFieldPrefix = 'C'
     unsafePattern = re.compile('[^a-zA-Z0-9_]')
     sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]
+    for i,field in enumerate(sanitizedFields):
+        if field[0].isdigit():
+            sanitizedFields[i] = '%s%s' % (numericFieldPrefix, field)
 
     dupeCheck = set()
     for i,(sf,f) in enumerate(zip(sanitizedFields, rawFields)):
