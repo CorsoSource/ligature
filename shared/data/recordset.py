@@ -131,7 +131,6 @@ class RecordSet(UpdateModel):
             
     def clear(self):
         self._groups = []
-        self._gindex = {}
         
         
     def column(self,column):
@@ -250,13 +249,11 @@ class RecordSet(UpdateModel):
         """Get a particular set of groups if a slice is provided, 
              otherwise assume it's an index reference. 
         """
-        if isinstance(selector, slice):
-            return self._groups[selector]
-        elif isinstance(selector, tuple):
+        if isinstance(selector, tuple):
             column,slicer = selector
             return self.column(column)[slicer]
         else:
-            return self._gindex[selector]
+            return self._groups[selector]
 
     
     @property
