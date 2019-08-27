@@ -54,7 +54,7 @@ class Calculation(Composable):
 
 class Sweep(Calculation):
     
-    ScanClass = RowScanner
+    ScanClass = ElementScanner
    
     # Record by record
     def calculate(self):
@@ -73,7 +73,7 @@ class Sweep(Calculation):
 
 class Cluster(Calculation):
     
-    ScanClass = GroupScanner
+    ScanClass = ChunkScanner
     
     # By group's records
     def calculate(self):
@@ -94,7 +94,7 @@ class Cluster(Calculation):
 
 class Window(Sweep, Calculation):
 
-    ScanClass = GroupScanner
+    ScanClass = ChunkScanner
     
     def calculate(self):
         """Run the aggregate function by group creating one new group.
@@ -110,7 +110,7 @@ class Window(Sweep, Calculation):
 
 class Aggregate(Calculation):
     
-    ScanClass = RowScanner
+    ScanClass = ElementScanner
     
     def calculate(self):
         """Run the aggregate function by group, each creating a new group.
