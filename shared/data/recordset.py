@@ -292,4 +292,5 @@ class RecordSet(UpdateModel):
                 break
         if totalRecordCount > elideLimit:
             out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]   
+        out += ['']
         return '\n'.join(out)

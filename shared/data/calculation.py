@@ -85,10 +85,11 @@ class Cluster(Calculation):
         calc = [(1,3,3,5),(5,7),(7,9,9)] # 3 groups
         """
         self._resultSet.extend(
-            [self._resultSet._RecordType(
-                self.function(*rowValues))
-             for groupedValues in zip(*self.scanners)
-             for rowValues in zip(*groupedValues)
+            [ tuple( self.function(*rowValues)
+                     for rowValues 
+                     in zip(*groupedValues) )
+             for groupedValues 
+             in zip(*self.scanners)
             ])
 
 
@@ -126,6 +127,4 @@ class Aggregate(Calculation):
         
         self._resultSet.clear()
         
-        self._resultSet.append(
-            self._resultSet.coerceRecordType( 
-                self.function(*self.scanners) ) )
+        self._resultSet.append( (self.function(*self.scanners),) )

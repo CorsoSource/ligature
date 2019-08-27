@@ -35,13 +35,38 @@ class Pivot(Transform):
                 self._resultSet.coerceRecordType(
                     tuple(zip(*group)) ) )
 
+
 class Regroup(Transform):
-    """Take one recordset's grouping and enforce it on another's.
+    """Take the first recordset's grouping and enforce it on another's.
     NOTE: This assumes this can work! No validation (yet) is done.
       Rather, this is a way to flag that two recordsets are aligned.
     """
-    pass
-    #raise NotImplementedError
+    ScanClass = (ReplayingGroupScanner, ReplayingRecordScanner)
+    
+    def __init__(self, source, target):
+        # Initialize mixins
+        super(Regroup, self).__init__()
+        
+        self.sources = (source, target)
+        self._resultSet = RecordSet(recordType=target._RecordType)
+        self._generateScanners()
+    
+    def _generateScanners(self):
+        #source, target = self.sources
+        #self.scanners = (GroupScanner(source), RecordScanner(target))
+        self.scanners = tuple(sc(s) for sc,s in zip(self.ScanClass, self.sources))
+        
+    def transform(self):
+        source, target = self.scanners
+        
+        for group in source:
+            newGroup = tuple(record for _,record in zip(group, target))
+            if len(newGroup) == len(group):
+                self._resultSet.extend( (newGroup,) )
+                source.anchor()
+                target.anchor()
+            else:
+                break
 
 
 class Merge(Transform):
