@@ -5,8 +5,11 @@ class Transform(Composable):
     """This generally regroups or structures data, but does not 
        calculate new data.
     """
-    pass
-    #raise NotImplementedError
+    ScanClass = Scanner
+    
+    def _apply(self):
+        self.transform()
+        self._needsUpdate = False
 
 
 class Pivot(Transform):
@@ -15,8 +18,24 @@ class Pivot(Transform):
     becomes
     [({a:(4,6,8),b:(3,5,7)}),({a:(10,12),b:(9,11)})]
     """
-    pass
-    #raise NotImplementedError
+    ScanClass = GroupScanner
+    
+    def __init__(self, source):
+        # Initialize mixins
+        super(Pivot, self).__init__(source)
+
+        self.sources = (source,)
+        self._resultSet = RecordSet(recordType=source._RecordType)
+        self._generateScanners()
+    
+    def _generateScanners(self):
+        self.scanners = tuple(self.ScanClass(self.sources[0], field)
+                              for field
+                              in self.sources[0]._RecordType._fields )            
+    
+    def transform(self):
+        for gs in zip(*self.scanners):
+            self._resultSet.append( (gs,) )
 
 
 class Regroup(Transform):

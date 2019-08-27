@@ -93,6 +93,7 @@ class RecordSet(UpdateModel):
     def _initializeCopy(self, recordSet):
         self._RecordType = recordSet._RecordType
         self._groups = [group for group in recordSet._groups]
+        # Note that it'll regenerate indexes even on copy...
         
     
     def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
@@ -127,6 +128,8 @@ class RecordSet(UpdateModel):
         #   So it only requires one argument (the group), but may optionally take self
         if indexingFunction:
             self._indexingFunction = indexingFunction
+        elif isinstance(initialData, RecordSet):
+            self._indexingFunction = initialData._indexingFunction
         else:
             # default indexing function: simply the index of the group in the listing.
             self._indexingFunction = lambda group, myself=self: myself._groups.index(group)
@@ -134,16 +137,23 @@ class RecordSet(UpdateModel):
         self._gindex = {}
         for group in self._groups:
             self._addIndexEntry(group)
-            
+        
         # monkey patch for higher speed access
-        self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
-    
-
+        self._columns = tuple(RecordSetColumn(self, ix) 
+                              for ix 
+                              in range(len(self._RecordType._fields)))
+        
+        
     def _addIndexEntry(self, group):
         gix = self._indexingFunction(group)
         self._gindex[gix] = self._gindex.get(gix,[]) + [group]
     
     
+    def clear(self):
+        self._groups = []
+        self._gindex = {}
+        
+        
     def column(self,column):
         return self._columns[self._RecordType._lookup[column]]
 

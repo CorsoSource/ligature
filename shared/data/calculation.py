@@ -9,7 +9,7 @@ def getArguments(function):
 class Calculation(Composable):
     """Base class for sweeping over RecordSets.
     """
-    __slots__ = ('function', 'scanners', '_mapInputs')
+    __slots__ = ('function', '_mapInputs')
     
     ScanClass = Scanner
     
@@ -43,32 +43,12 @@ class Calculation(Composable):
                 raise ValueError('Column "%s" not found in sources!' % column) #' \n\t%s' % (column, '\n\t'.join('{%s}' % s._lookup.keys() for s in reversed(self.sources)))
 
         self.scanners = tuple(scanners)
-    
-    def _debounce_scanners(self):
-        """As we iterate the scanners, one may exhaust prematurely,
-           leaving them in an unaligned state (the first scanners
-           may have iterated while the stopped won't).
-        """
-        # Check if any scanners failed to finish or needs to be reprimed
-        if all(scanner.exhausted for scanner in self.scanners):
-            return
-        for scanner in self.scanners:
-            # Once the exhausted scanner is reached, stop. 
-            # Only the previous would have over-emitted.
-            if scanner.exhausted:
-                break
-            else:
-                scanner.rewind()
-    
-    def apply(self):
-        super(Calculation, self).apply()
-        self._debounce_scanners()
 
     def _apply(self):
-        self._calculate()
+        self.calculate()
         self._needsUpdate = False
 
-    def _calculate(self):
+    def calculate(self):
         raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
 
 
@@ -77,9 +57,10 @@ class Sweep(Calculation):
     ScanClass = RowScanner
    
     # Record by record
-    def _calculate(self):
+    def calculate(self):
         """Run the function by row creating a new group.
            If groups don't matter, this is easiest.
+           Each resulting group is an update.
         f(a,b)=a+b 
         rs.a = [(1,2,3,4),(5,6),(7,8,9)]
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
@@ -95,7 +76,7 @@ class Cluster(Calculation):
     ScanClass = GroupScanner
     
     # By group's records
-    def _calculate(self):
+    def calculate(self):
         """For each group, run the function by row, keeping grouping.
            Use this to maintain groupings for later aggregates.
         f(a,b)=a+b 
@@ -115,7 +96,7 @@ class Window(Sweep, Calculation):
 
     ScanClass = GroupScanner
     
-    def _calulate(self):
+    def calculate(self):
         """Run the aggregate function by group creating one new group.
            If groups don't matter after windowing, this is easiest.
            Each resulting group is an update.
@@ -124,14 +105,14 @@ class Window(Sweep, Calculation):
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(8,10,23)]               # 1 group of 3
         """
-        super(Window, self)._calculate()
+        super(Window, self).calculate()
 
 
 class Aggregate(Calculation):
     
     ScanClass = RowScanner
     
-    def _calculate(self):
+    def calculate(self):
         """Run the aggregate function by group, each creating a new group.
            Useful for aggregates that may be used with another calc's groups.
            Collapses down a group to a single value.
@@ -143,11 +124,8 @@ class Aggregate(Calculation):
         for scanner in self.scanners:
             scanner.reset()
         
-        self._resultSet._groups = [(
+        self._resultSet.clear()
+        
+        self._resultSet.append(
             self._resultSet.coerceRecordType( 
-                self.function(*self.scanners)
-                )
-            ,)]
-        g = self._resultSet._groups[0]
-        gix = self._resultSet._indexingFunction(g)
-        self._resultSet._gindex = {gix:g}
+                self.function(*self.scanners) ) )
