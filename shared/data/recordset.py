@@ -218,7 +218,7 @@ class RecordSet(UpdateModel):
             self.extend(addition)
         else:
             if isinstance(addition, self._RecordType):
-                newGroup = tuple(self.coerceRecordType(addition),)
+                newGroup = (self.coerceRecordType(addition),)
             else: 
                 # tuple creation is slightly faster if the generator is consumed by a list first
                 newGroup = tuple([self.coerceRecordType(entry)

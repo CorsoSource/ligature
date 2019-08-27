@@ -42,8 +42,8 @@ class RecordType(object):
         """
         return self._tuple
 
-    def _replace(_self, **keyValues):
-        result = _self._make(map(keyValues.pop, _self._fields, _self))
+    def _replace(self, **keyValues):
+        result = self._cast(map(keyValues.pop, self._fields, self))
         if keyValues: # make sure all got consumed by the map
             raise ValueError('Got unexpected field names: %r' % keyValues.keys())
         self._tuple = result
@@ -57,7 +57,6 @@ class RecordType(object):
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
         return iter(self._tuple)
-
 
     def __repr__(self):
         'Format the representation string for better printing'
