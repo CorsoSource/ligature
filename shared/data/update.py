@@ -4,15 +4,18 @@ class UpdateModel(object):
     """
     
     # Slots ensures we're explicit and fast
-    __slots__ = ('_sources', 'listeners')
+    __slots__ = ('_sources', '_listeners')
     
     def __init__(self, *args, **kwargs):
         """Initialize the chain.
         By tracking both sources and listeners, we can make a graph of what
           gets updated by what.
         """
+        # Initialize mixins - NOPE Update is not cooperative.
+        # It expects to be a base class
+        #super(UpdateModel, self).__init__(*args, **kwargs)
         self._sources = tuple()
-        self.listeners = list()
+        self._listeners = list()
         
     def subscribe(self, listener):
         """Add a listener to the subscriber list.
@@ -22,20 +25,20 @@ class UpdateModel(object):
         Note that Calc objects have a source to act as their publisher list.
           (In case we want to backtrace.)
         """
-        if not listener in self.listeners:
-            self.listeners.append(listener)
+        if not listener in self._listeners:
+            self._listeners.append(listener)
     
     def unsubscribe(self, listener):
         """Remove a listener from the subscriber list.
         """
-        while listener in self.listeners:
-            self.listeners.remove(listener)
+        while listener in self._listeners:
+            self._listeners.remove(listener)
     
     def notify(self, oldSelector, newSelector):
         """Fires an update to make sure dependents are updated, if needed.
         The selectors show what happened in the update.
         """
-        for dependent in self.listeners:
+        for dependent in self._listeners:
             try:
                 dependent.update(oldSelector, newSelector)
             except NotImplementedError:
@@ -47,14 +50,35 @@ class UpdateModel(object):
         """Execute the update. Each class will have its own way to implement this."""
         raise NotImplementedError
     
-    # The sources tuple is set rarely, and to ensure the update model
-    #   can't be forgotten, subscription is automatic now.
+    @property
+    def listeners(self):
+        return self._listeners
+    
+    @listeners.setter
+    def listeners(self, newListeners):
+        self._replace_listeners(newListeners)
+    
+    def _replace_listeners(self, newSources):        
+        """If the listeners are changed en masse, break
+           all the subscriptions.
+           This setter makes sure the subscription methods are never skipped.
+        """
+        while self._listeners:
+            listener = self._listeners[0]
+            self.unsubscribe(listener)
+            
+        for listener in newListeners:
+            self.subscribe(listener)
+        
     @property
     def sources(self):
         return self._sources
     
     @sources.setter
     def sources(self, newSources):
+        self._replace_sources(newSources)
+    
+    def _replace_sources(self, newSources):
         for source in set(self._sources).difference(set(newSources)):
             source.unsubscribe(self)
         for source in newSources:
