@@ -50,7 +50,10 @@ class Composable(UpdateModel):
         return self._resultSet   
         
     def update(self, oldSelector, newSelector):
+        # (None, None) signals that the data is out of date, 
+        #  but there is nothing for dependents to do yet.
         self._needsUpdate = True
+        self.notify(None,None)
           
     def apply(self):
         for source in self.sources:
