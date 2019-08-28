@@ -50,16 +50,16 @@ class Composable(GraphModel,UpdateModel):
     def results(self):
         return self._resultSet   
 
-#     # This allows us to better control how the graph is followed
-#     def _replace_sources(self, newSources):
-#         for source in set(self._sources).difference(set(newSources)):
-#             source.unsubscribe(self)
-#         for source in newSources:
-#             if isinstance(source, Composable):
-#                 source._resultSet.subscribe(self)
-#             else:
-#                 source.subscribe(self)
-#         self._sources = newSources
+    # This allows us to better control how the graph is followed
+    def _replace_sources(self, newSources):
+        for source in set(self._sources).difference(set(newSources)):
+            source.unsubscribe(self)
+        for source in newSources:
+            if isinstance(source, Composable):
+                source._resultSet.subscribe(self)
+            else:
+                source.subscribe(self)
+        self._sources = newSources
             
     def update(self, oldSelector, newSelector):
         # (None, None) signals that the data is out of date, 

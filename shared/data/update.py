@@ -48,7 +48,11 @@ class UpdateModel(object):
             
     def update(self, oldSelector, newSelector):
         """Execute the update. Each class will have its own way to implement this."""
-        raise NotImplementedError
+        # (None, None) signals that the data is out of date, 
+        #  but there is nothing for dependents to do yet.
+        #self._needsUpdate = True
+        # Pass-through updates without triggering
+        self.notify(None,None)
     
     @property
     def listeners(self):
