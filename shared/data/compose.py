@@ -1,7 +1,8 @@
 from shared.data.update import UpdateModel
+from shared.data.graph import GraphModel
 
 
-class Composable(UpdateModel):
+class Composable(GraphModel,UpdateModel):
     """All composable classes will scan and consume data
        as well as have a result that can be chained into the next.
     """
@@ -48,7 +49,18 @@ class Composable(UpdateModel):
     @updateFirst
     def results(self):
         return self._resultSet   
-        
+
+#     # This allows us to better control how the graph is followed
+#     def _replace_sources(self, newSources):
+#         for source in set(self._sources).difference(set(newSources)):
+#             source.unsubscribe(self)
+#         for source in newSources:
+#             if isinstance(source, Composable):
+#                 source._resultSet.subscribe(self)
+#             else:
+#                 source.subscribe(self)
+#         self._sources = newSources
+            
     def update(self, oldSelector, newSelector):
         # (None, None) signals that the data is out of date, 
         #  but there is nothing for dependents to do yet.

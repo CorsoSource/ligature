@@ -7,6 +7,15 @@ class Transform(Composable):
     """    
     ScanClass = Scanner
     
+    def _graph_attributes(self):
+        label = '%s\\lOut: %s' % (
+            type(self).__name__,
+            ', '.join(self._resultSet._RecordType._fields))
+        return {
+            'label': label,
+            'shape': 'doubleoctagon'
+        }
+    
     def _apply(self):
         self.transform()
         self._needsUpdate = False

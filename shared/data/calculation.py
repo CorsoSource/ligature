@@ -16,7 +16,9 @@ class Calculation(Composable):
     def __init__(self, sources, function, outputLabels, mapInputs={}):
         # Initialize mixins
         super(Calculation, self).__init__(sources, function, outputLabels, mapInputs={})
+      
         self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
+        self.subscribe(self._resultSet)
         self.sources = tuple(sources)
         self.function = function
         self._mapInputs = mapInputs
@@ -47,7 +49,17 @@ class Calculation(Composable):
     def _apply(self):
         self.calculate()
         self._needsUpdate = False
-
+            
+    def _graph_attributes(self):
+        label = 'In: %s\\lf(x): "%s"\\lOut: %s' % (
+            ', '.join(getArguments(self.function)),
+            type(self).__name__,
+            ', '.join(self._resultSet._RecordType._fields))
+        return {
+            'label': label,
+            'shape': 'rect'
+        }
+    
     def calculate(self):
         raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
 

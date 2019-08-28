@@ -44,7 +44,7 @@ class RecordSetColumn(object):
 
         
 
-class RecordSet(UpdateModel):
+class RecordSet(GraphModel,UpdateModel):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence
@@ -254,13 +254,23 @@ class RecordSet(UpdateModel):
             return self.column(column)[slicer]
         else:
             return self._groups[selector]
-
     
     @property
     def _records(self):
         return (record 
                 for group in self._groups 
                 for record in group)
+    
+    def _graph_attributes(self):
+        fields = ', '.join(self._RecordType._fields)
+        label = 'RecordSet\n%s' % fields
+        return {
+            'label': label,
+            'shape': 'cylinder',
+        }
+    
+    def __str__(self):
+        return 'RecordSet=%r' % repr(self._RecordType._fields)
                
     def __repr__(self, elideLimit=20):
         'Format the representation string for better printing'
