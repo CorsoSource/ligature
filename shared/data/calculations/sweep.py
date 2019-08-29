@@ -1,5 +1,5 @@
 from ..calculation import Calculation
-from ..scanners.base import ElementScanner
+from ..scanners.element import ElementScanner
 
 
 class Sweep(Calculation):

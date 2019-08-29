@@ -1,4 +1,4 @@
-from ..compose import Composable
+from .compose import Composable
 
 
 class Transform(Composable):

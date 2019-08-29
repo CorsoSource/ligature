@@ -1,5 +1,5 @@
 from shared.data.calculation import Calculation
-from ..scanners.base import ChunkScanner
+from ..scanners.chunk import ChunkScanner
 from ..calculations.sweep import Sweep
 
 

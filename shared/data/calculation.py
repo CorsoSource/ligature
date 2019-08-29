@@ -1,7 +1,7 @@
-from ..compose import Composable
-from ..scanner import Scanner
-from ..recordset import RecordSet
-from ..record import genRecordType
+from .compose import Composable
+from .scanner import Scanner
+from .recordset import RecordSet
+from .record import genRecordType
 
 
 def getArguments(function):
