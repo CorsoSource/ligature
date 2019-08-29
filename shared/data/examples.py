@@ -14,10 +14,16 @@ def genData(columns, rows, start=0):
 
 
 
-a = [(1,2,3,4),(5,6),(7,8,9)]
-b = [(0,1,0,1),(0,1),(0,1,0)]
+a1 = [(1,2,3,4),(5,6),(7,8,9)]
+b1 = [(0,1,0,1),(0,1),(0,1,0)]
+
+a2 = [(11,12,13),(14,15,16)]
+b2 = [(1,0,1),(0,1,0)]
 
 simpleRecordSet = RecordSet(recordType='ab')
-for g in zip(a,b):
+for g in zip(a1,b1):
     simpleRecordSet.append(v for v in zip(*g))
 
+simpleAddition = RecordSet(recordType='ab')
+for g in zip(a2,b2):
+    simpleAddition.append(v for v in zip(*g)) 

@@ -4,18 +4,18 @@ import unittest
 from shared.data.recordset import RecordSet
 from shared.data.examples import simpleRecordSet, simpleAddition
 
-from shared.data.calculations.sweep import Sweep
+from shared.data.calculations.aggregate import Aggregate
 
 
-class SweepTestCase(unittest.TestCase):
+class WindowTestCase(unittest.TestCase):
 
 	def test_basic(self):
 
-		function = lambda a,b: a+b
+		function = lambda a,b: sum(a) - sum(b)
 
 		srs = RecordSet(simpleRecordSet)
-
-		c = Sweep([srs], function, 'c')
+		
+		c = Aggregate([srs], function, 'c')
 
 		# Calculations are lazily evaluated
 		self.assertEqual(c._resultSet._groups, [])
@@ -23,7 +23,7 @@ class SweepTestCase(unittest.TestCase):
 		# When evaluated, we get the following
 		self.assertEqual(
 			[[v.c for v in group] for group in c.results],
-			[[1, 3, 3, 5, 5, 7, 7, 9, 9]]
+			[[41]]
 			)
 
 		srs.extend(simpleAddition)
@@ -32,18 +32,18 @@ class SweepTestCase(unittest.TestCase):
 		self.assertEqual(len(c._resultSet._groups), 1)
 
 		# but upon evaluation we see an update has been applied
-		# note that this is ONE update - groups are not maintained
+		# note that results are always one group
 		self.assertEqual(
 			[[v.c for v in group] for group in c.results],
-			[[1, 3, 3, 5, 5, 7, 7, 9, 9], [12, 12, 14, 14, 16, 16]]
+			[[119]]
 			)
 
 		# Demonstrate slicing for columns works as expected
 		self.assertEqual(
 			[tuple(group) for group in c.results['c',:]],
-			[(1, 3, 3, 5, 5, 7, 7, 9, 9), (12, 12, 14, 14, 16, 16)]
+			[(119,)]
 			)
 
-
-suite = unittest.TestLoader().loadTestsFromTestCase(SweepTestCase)
+		
+suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
 unittest.TextTestRunner(verbosity=2).run(suite)
