@@ -238,7 +238,7 @@ class RecordSet(GraphModel,UpdateModel):
         """Extend the records by concatenating the record groups of another RecordSet.
         """
         if isinstance(additionalGroups, RecordSet):
-            assert self._RecordType._fields == recordSet._RecordType._fields, 'RecordSets can only be extended by other RecordSets of the same RecordType.'
+            assert self._RecordType._fields == additionalGroups._RecordType._fields, 'RecordSets can only be extended by other RecordSets of the same RecordType.'
             self._groups.extend(additionalGroups._groups)
             self.notify(None, slice(-len(additionalGroups),None))
         else:
