@@ -49,7 +49,13 @@ class Scanner(object):
                 self._record_cursor= 0
             else:
                 self._group_cursor -= 1
-    
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        return next(iter(self))
+
     @property
     def exhausted(self):
         return self._record_cursor == 0 and self._group_cursor == len(self.source._groups)
