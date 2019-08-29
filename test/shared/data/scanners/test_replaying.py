@@ -86,17 +86,29 @@ class ReplayingChunkScannerTestCase(unittest.TestCase):
 			[(1, 2, 3, 4), (5, 6), (7, 8, 9)]
 			)
 
-		# partial iteration...
+		# Anchor after next(iter)
 		self.assertEqual(
-			[v for i,v in enumerate(scanner) if i < 2],
-			[(1, 2, 3, 4), (5, 6)]
+			next(scanner),
+			(1,2,3,4)
 			)
-		# ... and an anchor...
 		scanner.anchor()
-		# ... resumes iteration from the anchor
+
 		self.assertEqual(
 			[v for v in scanner],
-			[(7,8,9)]
+			[(5, 6), (7, 8, 9)]
+			)
+
+		scanner.reset()
+
+		# partial iteration with an anchor
+		for i,v in enumerate(scanner):
+		    if i < 2: 
+		        scanner.anchor()
+		        break
+
+		self.assertEqual(
+			[v for v in scanner],
+			[(5, 6), (7, 8, 9)]
 			)
 
 		# Anchoring after iteration stops emitting
@@ -196,7 +208,6 @@ class ReplayingRecordScannerTestCase(unittest.TestCase):
 			)
 
 
-
 class ReplayingGroupScannerTestCase(unittest.TestCase):
 
 	def test_basic(self):
@@ -221,18 +232,31 @@ class ReplayingGroupScannerTestCase(unittest.TestCase):
 			 [(7, 0), (8, 1), (9, 0)]]
 			)
 
-		# partial iteration...
+		# Anchor after next(iter)
 		self.assertEqual(
-			[[r._tuple for r in g] for i,g in enumerate(scanner) if i < 2],
-			[[(1, 0), (2, 1), (3, 0), (4, 1)], 
-			 [(5, 0), (6, 1)]]
+			[r._tuple for r in next(scanner)],
+			[(1, 0), (2, 1), (3, 0), (4, 1)]
 			)
-		# ... and an anchor...
 		scanner.anchor()
-		# ... resumes iteration from the anchor
+
 		self.assertEqual(
-			[v for v in scanner],
-			[(7, 0), (8, 1), (9, 0)]
+			[[r._tuple for r in g] for g in scanner],
+			[[(5, 0), (6, 1)], 
+			 [(7, 0), (8, 1), (9, 0)]]
+			)
+
+		scanner.reset()
+
+		# partial iteration with an anchor
+		for i,r in enumerate(scanner):
+		    if i < 2: 
+		        scanner.anchor()
+		        break
+
+		self.assertEqual(
+			[[r._tuple for r in g] for g in scanner],
+			[[(5, 0), (6, 1)], 
+			 [(7, 0), (8, 1), (9, 0)]]
 			)
 
 		# Anchoring after iteration stops emitting
