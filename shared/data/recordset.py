@@ -6,6 +6,8 @@ import functools, math
 from itertools import izip as zip
 from itertools import islice
 
+from weakref import WeakSet
+
 try:
     from com.inductiveautomation.ignition.common import BasicDataset
 except ImportError:
@@ -57,8 +59,45 @@ class RecordSet(GraphModel,UpdateModel):
     
     Based on collections.MutableSequence
     """
-    
+    # Track all the RecordSets that get made. We can use this to automagically trim the cache.
+    # References need to be weak to ensure garbage collection can continue like normal.
+    _instances = WeakSet()
+
     __slots__ = ('_RecordType', '_groups', '_columns')
+
+
+    def __new__(cls, *args, **kwargs):
+        """See https://stackoverflow.com/a/12102666/1943640 for an example of this."""
+        instance = super(RecordSet, cls).__new__(cls, *args, **kwargs)
+        cls._instances.add(instance)
+        return instance
+
+    @classmethod
+    def _truncateAll(cls):
+        instances = list(cls._instances)
+        for instance in instances:
+            instance.truncate()
+
+    def truncate(self):
+        """Clear out data that is not unused.
+           Cooperate with the scanners pointing to this RecordSet
+             by asking for a tuple declaring what records or groups
+             it needs.
+           Only groups are truncated, and only from the beginning.
+           Once completed, each listening scanner is notified
+             so its cursors can be corrected accordingly.
+        """
+        raise NotImplementedError
+
+        safeGroupIx = -1
+        for scanner in listeningScanners:
+            pass
+
+        for scanner in listeningScanners:
+            scanner.updateCursorsForRemoval(safeGroupIx)
+
+
+
 
     # INIT
     def _initializeDataSet(self, dataset, validate=False):
