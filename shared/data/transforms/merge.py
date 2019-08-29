@@ -1,6 +1,8 @@
+from ..scanners.element import ElementScanner
 from ..transform import Transform
 from ..recordset import RecordSet
-from ..scanners.element import ElementScanner
+from ..compose import Composable
+from ..record import genRecordType
 
 from itertools import izip as zip
 

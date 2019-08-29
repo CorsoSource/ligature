@@ -1,5 +1,5 @@
 from .compose import Composable
-
+from .scanner import Scanner
 
 class Transform(Composable):
     """This generally regroups or structures data, but does not 
