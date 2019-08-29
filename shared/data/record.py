@@ -1,8 +1,15 @@
 from itertools import izip as zip
 import re
 
-from com.inductiveautomation.ignition.common import BasicDataset
-
+try:
+    from com.inductiveautomation.ignition.common import BasicDataset
+except ImportError:
+    from abc import ABCMeta
+    
+    class BasicDataset():
+        __metaclass__ = ABCMeta
+        pass
+    
 
 class RecordType(object):
     """Inspired by recipe in Python2 standard library.

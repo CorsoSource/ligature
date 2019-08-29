@@ -1,10 +1,18 @@
+from ..record import RecordType, genRecordType
+from ..update import UpdateModel
+from ..graph import GraphModel
+
 import functools, math
 from itertools import izip as zip
+from itertools import islice
 
-from com.inductiveautomation.ignition.common import BasicDataset
-
-from shared.data.recordtype import RecordType, genRecordType
-from shared.data.update import UpdateModel
+try:
+    from com.inductiveautomation.ignition.common import BasicDataset
+except ImportError:
+    from abc import ABCMeta
+    class BasicDataset():
+        __metaclass__ = ABCMeta
+        pass
 
 
 class RecordSetColumn(object):

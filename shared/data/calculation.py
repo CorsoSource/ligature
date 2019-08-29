@@ -1,5 +1,7 @@
-from shared.data.scanners import Scanner
-from shared.data.compose import Composable
+from ..compose import Composable
+from ..scanner import Scanner
+from ..recordset import RecordSet
+from ..record import genRecordType
 
 
 def getArguments(function):
@@ -62,81 +64,3 @@ class Calculation(Composable):
     
     def calculate(self):
         raise NotImplementedError("The base calculation class' _calculate() must be overridden.")
-
-
-class Sweep(Calculation):
-    
-    ScanClass = ElementScanner
-   
-    # Record by record
-    def calculate(self):
-        """Run the function by row creating a new group.
-           If groups don't matter, this is easiest.
-           Each resulting group is an update.
-        f(a,b)=a+b 
-        rs.a = [(1,2,3,4),(5,6),(7,8,9)]
-        rs.b = [(0,1,0,1),(0,1),(0,1,0)]
-        calc = [(1,3,3,5,5,7,7,9,9)]     # 1 group of 9
-        """
-        self._resultSet.append(self.function(*values)
-                               for values 
-                               in zip(*self.scanners))
-
-
-class Cluster(Calculation):
-    
-    ScanClass = ChunkScanner
-    
-    # By group's records
-    def calculate(self):
-        """For each group, run the function by row, keeping grouping.
-           Use this to maintain groupings for later aggregates.
-        f(a,b)=a+b 
-        rs.a = [(1,2,3,4),(5,6),(7,8,9)]
-        rs.b = [(0,1,0,1),(0,1),(0,1,0)]
-        calc = [(1,3,3,5),(5,7),(7,9,9)] # 3 groups
-        """
-        self._resultSet.extend(
-            [ tuple( self.function(*rowValues)
-                     for rowValues 
-                     in zip(*groupedValues) )
-             for groupedValues 
-             in zip(*self.scanners)
-            ])
-
-
-class Window(Sweep, Calculation):
-
-    ScanClass = ChunkScanner
-    
-    def calculate(self):
-        """Run the aggregate function by group creating one new group.
-           If groups don't matter after windowing, this is easiest.
-           Each resulting group is an update.
-        f(a,b)=sum(a)-sum(b) 
-        rs.a = [(1,2,3,4),(5,6),(7,8,9)]
-        rs.b = [(0,1,0,1),(0,1),(0,1,0)]
-        calc = [(8,10,23)]               # 1 group of 3
-        """
-        super(Window, self).calculate()
-
-
-class Aggregate(Calculation):
-    
-    ScanClass = ElementScanner
-    
-    def calculate(self):
-        """Run the aggregate function by group, each creating a new group.
-           Useful for aggregates that may be used with another calc's groups.
-           Collapses down a group to a single value.
-        f(a,b)=sum(a)-sum(b) 
-        rs.a = [(1,2,3,4),(5,6),(7,8,9)]  = 45
-        rs.b = [(0,1,0,1),(0,1),(0,1,0)]  = 4
-        calc = [(41,)]                    # 1 group of 1
-        """
-        for scanner in self.scanners:
-            scanner.reset()
-        
-        self._resultSet.clear()
-        
-        self._resultSet.append( (self.function(*self.scanners),) )

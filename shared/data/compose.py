@@ -1,11 +1,24 @@
-from shared.data.update import UpdateModel
-from shared.data.graph import GraphModel
+import functools
+
+from ..update import UpdateModel
+from ..graph import GraphModel
 
 
+class MetaComposable(type):
+    
+    registered = {}
+    
+    def __new__(cls, clsname, bases, attrs):
+        newclass = super(MetaComposable, cls).__new__(cls, clsname, bases, attrs)
+        cls.registered[clsname] = newclass
+        return newclass
+    
+    
 class Composable(GraphModel,UpdateModel):
     """All composable classes will scan and consume data
        as well as have a result that can be chained into the next.
     """
+    __metaclass__ = MetaComposable
     __slots__ = ('scanners', '_resultSet', '_needsUpdate')
     
     def __init__(self, *args, **kwargs):

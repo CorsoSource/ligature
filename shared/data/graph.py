@@ -1,10 +1,27 @@
-from shared.data.update import UpdateModel
+from ..update import UpdateModel
 
-import sys,os
 import networkx as nx
 import nxpd
-nxpd.nxpdParams['show'] = 'ipynb'
-os.environ['PATH'] += os.pathsep + '/opt/conda/envs/py27/bin'
+
+try:
+    if get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
+        nxpd.nxpdParams['show'] = 'ipynb'
+except NameError:
+    pass
+
+import distutils.spawn, os
+try:
+    for binName in ('dot', 'dot.exe'):
+        dotPath = distutils.spawn.find_executable(binName)
+        if not dotPath:
+            continue
+        dotPath = dotPath.rpartition('/')[0]
+        if not dotPath in os.environ['PATH']:
+            os.environ['PATH'] += os.pathsep + dotPath
+        break
+except:
+    pass
+
 
 class GraphModel(UpdateModel):
     
