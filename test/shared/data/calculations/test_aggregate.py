@@ -7,7 +7,7 @@ from shared.data.examples import simpleRecordSet, simpleAddition
 from shared.data.calculations.aggregate import Aggregate
 
 
-class WindowTestCase(unittest.TestCase):
+class AggregateTestCase(unittest.TestCase):
 
 	def test_basic(self):
 
@@ -45,5 +45,5 @@ class WindowTestCase(unittest.TestCase):
 			)
 
 		
-suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
+suite = unittest.TestLoader().loadTestsFromTestCase(AggregateTestCase)
 unittest.TextTestRunner(verbosity=2).run(suite)
