@@ -1,10 +1,20 @@
+from .record import RecordType, genRecordType
+from .update import UpdateModel
+from .graph import GraphModel
+
 import functools, math
 from itertools import izip as zip
+from itertools import islice
 
-from com.inductiveautomation.ignition.common import BasicDataset
+from weakref import WeakSet
 
-from shared.data.recordtype import RecordType, genRecordType
-from shared.data.update import UpdateModel
+try:
+    from com.inductiveautomation.ignition.common import BasicDataset
+except ImportError:
+    from abc import ABCMeta
+    class BasicDataset():
+        __metaclass__ = ABCMeta
+        pass
 
 
 class RecordSetColumn(object):
@@ -34,24 +44,60 @@ class RecordSetColumn(object):
                     for group 
                     in islice(self._source._groups, selector.start, selector.stop) )
         else:
-            return ((record._tuple[self._index]
+            return (record._tuple[self._index]
                       for record
-                      in group )
-                    for group in self._source._gindex[selector] )
+                      in self._source._groups[selector] )
 
     def __repr__(self):
         'Format the representation string for better printing'
         return 'RecordSetColumn("%s" at %d)' % (self._source._RecordType._fields[self._index], self._index)
+
         
 
-class RecordSet(UpdateModel):
+class RecordSet(GraphModel,UpdateModel):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence
     """
-    
-    __slots__ = ('_RecordType', '_groups', '_columns',
-                 '_gindex', '_indexingFunction')
+    # Track all the RecordSets that get made. We can use this to automagically trim the cache.
+    # References need to be weak to ensure garbage collection can continue like normal.
+    _instances = WeakSet()
+
+    __slots__ = ('_RecordType', '_groups', '_columns')
+
+
+    def __new__(cls, *args, **kwargs):
+        """See https://stackoverflow.com/a/12102666/1943640 for an example of this."""
+        instance = super(RecordSet, cls).__new__(cls, *args, **kwargs)
+        cls._instances.add(instance)
+        return instance
+
+    @classmethod
+    def _truncateAll(cls):
+        instances = list(cls._instances)
+        for instance in instances:
+            instance.truncate()
+
+    def truncate(self):
+        """Clear out data that is not unused.
+           Cooperate with the scanners pointing to this RecordSet
+             by asking for a tuple declaring what records or groups
+             it needs.
+           Only groups are truncated, and only from the beginning.
+           Once completed, each listening scanner is notified
+             so its cursors can be corrected accordingly.
+        """
+        raise NotImplementedError
+
+        safeGroupIx = -1
+        for scanner in listeningScanners:
+            pass
+
+        for scanner in listeningScanners:
+            scanner.updateCursorsForRemoval(safeGroupIx)
+
+
+
 
     # INIT
     def _initializeDataSet(self, dataset, validate=False):
@@ -93,14 +139,15 @@ class RecordSet(UpdateModel):
     def _initializeCopy(self, recordSet):
         self._RecordType = recordSet._RecordType
         self._groups = [group for group in recordSet._groups]
+        # Note that it'll regenerate indexes even on copy...
         
     
-    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, indexingFunction=None):        
+    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False):#, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
         """
         # Initialize mixins
-        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate, indexingFunction)
+        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate)
         
         # We can initialize with a record type, a record, or an iterable of records
         # First check if it's a DataSet object. If so, convert it.
@@ -122,28 +169,17 @@ class RecordSet(UpdateModel):
         else:
             raise ValueError("""Insufficient information to initialize the RecordSet."""
                              """ A RecordType must be implied by the constructor arguments.""")
-        
-        # The indexing function is not bound to the class or instance (because of __slots__)
-        #   So it only requires one argument (the group), but may optionally take self
-        if indexingFunction:
-            self._indexingFunction = indexingFunction
-        else:
-            # default indexing function: simply the index of the group in the listing.
-            self._indexingFunction = lambda group, myself=self: myself._groups.index(group)
-            
-        self._gindex = {}
-        for group in self._groups:
-            self._addIndexEntry(group)
-            
+                
         # monkey patch for higher speed access
-        self._columns = tuple(RecordSetColumn(self, ix) for ix in range(len(self._RecordType._fields)))
-    
-
-    def _addIndexEntry(self, group):
-        gix = self._indexingFunction(group)
-        self._gindex[gix] = self._gindex.get(gix,[]) + [group]
-    
-    
+        self._columns = tuple(RecordSetColumn(self, ix) 
+                              for ix 
+                              in range(len(self._RecordType._fields)))
+            
+            
+    def clear(self):
+        self._groups = []
+        
+        
     def column(self,column):
         return self._columns[self._RecordType._lookup[column]]
 
@@ -187,19 +223,24 @@ class RecordSet(UpdateModel):
         """
         return (reversed(group) for group in reversed(self._groups))
                 
-    def index(self, search):
+    def index(self, search, fromTop=True):
         """Returns the index of the group the search item is found in."""
-        if isinstance(search, self._RecordType):
-            for groupIx, groups in self._gindex.items():
-                for group in groups:
-                    for record in group:
-                        if search == record:
-                            return groupIx
+        if fromTop:
+            iterDir = (gg for gg in reversed(enumerate(self._groups)))
         else:
-            for groupIx, groups in self._gindex.items():
-                for group in groups:
-                    if search == group:
-                        return groupIx
+            iterDir = (gg for gg in enumerate(self._groups))
+            
+        if isinstance(search, self._RecordType):
+            for gix, group in iterDir:
+                if record in group:
+                    return gix
+        elif isinstance(search, tuple):
+            for gix, group in iterDir:
+                if search == group:
+                    return gix
+                for record in group:
+                    if record._tuple == search:
+                        return gix
         raise ValueError('Search item %r was not found' % search)
 
     def count(self, search):
@@ -213,8 +254,7 @@ class RecordSet(UpdateModel):
                        if record == search )
         elif isinstance(search, tuple):
             return sum(1 for group in self._groups if search == group)
-        else:
-            return len(self._gindex.get(search, []))
+        return 0
 
     def append(self, addition):
         """Append the group of records to the end of _groups.
@@ -224,29 +264,21 @@ class RecordSet(UpdateModel):
             self.extend(addition)
         else:
             if isinstance(addition, self._RecordType):
-                newGroup = tuple(self.coerceRecordType(addition),)
+                newGroup = (self.coerceRecordType(addition),)
             else: 
                 # tuple creation is slightly faster if the generator is consumed by a list first
                 newGroup = tuple([self.coerceRecordType(entry)
                                   for entry
                                   in addition ])
             self._groups.append(newGroup)
-            self._addIndexEntry(newGroup)
             self.notify(None, -1)
     
     def extend(self, additionalGroups):
         """Extend the records by concatenating the record groups of another RecordSet.
         """
         if isinstance(additionalGroups, RecordSet):
-            assert self._RecordType._fields == recordSet._RecordType._fields, 'RecordSets can only be extended by other RecordSets of the same RecordType.'
+            assert self._RecordType._fields == additionalGroups._RecordType._fields, 'RecordSets can only be extended by other RecordSets of the same RecordType.'
             self._groups.extend(additionalGroups._groups)
-            # We use our own indexing function, unless it's identical (minor effort savings)
-            if additionalGroups._indexingFunction == self._indexingFunction:
-                for groupIx, groups in additionalGroups._gindex.items():
-                    self._gindex = self._gindex.get(groupIx, []) + groups
-            else:
-                for group in additionalGroups._groups:
-                    self._addIndexEntry(group)
             self.notify(None, slice(-len(additionalGroups),None))
         else:
             for group in additionalGroups:
@@ -264,20 +296,28 @@ class RecordSet(UpdateModel):
         """Get a particular set of groups if a slice is provided, 
              otherwise assume it's an index reference. 
         """
-        if isinstance(selector, slice):
-            return self._groups[selector]
-        elif isinstance(selector, tuple):
+        if isinstance(selector, tuple):
             column,slicer = selector
             return self.column(column)[slicer]
         else:
-            return self._gindex[selector]
-
+            return self._groups[selector]
     
     @property
     def _records(self):
         return (record 
                 for group in self._groups 
                 for record in group)
+    
+    def _graph_attributes(self):
+        fields = ', '.join(self._RecordType._fields)
+        label = 'RecordSet\n%s' % fields
+        return {
+            'label': label,
+            'shape': 'cylinder',
+        }
+    
+    def __str__(self):
+        return 'RecordSet=%r' % repr(self._RecordType._fields)
                
     def __repr__(self, elideLimit=20):
         'Format the representation string for better printing'
@@ -292,22 +332,14 @@ class RecordSet(UpdateModel):
                                if records 
                                else ['']*len(self._RecordType._fields))]
         digits = math.floor(math.log10(elideLimit)) + 1
-        gixes = []
-        _rscan = 0
-        for group in self._groups:
-            gixes.append(self._indexingFunction(group))
-            _rscan += len(group)
-            if _rscan > elideLimit:
-                break
-        maxGixWidth = max([len(str(gix)) for gix in gixes] + [0])
+        maxGixWidth = math.floor(math.log10(len(self._groups))) + 1
         prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
         out += [recordPattern % tuple(['',''] + ['-'*len(field) for field in self._RecordType._fields])]
         
         remaining = elideLimit
-        for group in self._groups:
-            gix = self._indexingFunction(group)
+        for gix,group in enumerate(self._groups):
             for j,record in enumerate(group):
                 out += [recordPattern % tuple(['' if j else gix,j] + [repr(v) for v in record])]
                 remaining -= 1
@@ -317,4 +349,5 @@ class RecordSet(UpdateModel):
                 break
         if totalRecordCount > elideLimit:
             out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]   
+        out += ['']
         return '\n'.join(out)

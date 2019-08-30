@@ -1,8 +1,15 @@
 from itertools import izip as zip
 import re
 
-from com.inductiveautomation.ignition.common import BasicDataset
-
+try:
+    from com.inductiveautomation.ignition.common import BasicDataset
+except ImportError:
+    from abc import ABCMeta
+    
+    class BasicDataset():
+        __metaclass__ = ABCMeta
+        pass
+    
 
 class RecordType(object):
     """Inspired by recipe in Python2 standard library.
@@ -33,11 +40,17 @@ class RecordType(object):
     def keys(cls):
         return cls._fields
 
+    @property
     def values(self):
+        """Returns the tuple.
+        >>> R = genRecordType('abc')
+        >>> R((1,2,3)).values
+        (1, 2, 3)
+        """
         return self._tuple
 
-    def _replace(_self, **keyValues):
-        result = _self._make(map(keyValues.pop, _self._fields, _self))
+    def _replace(self, **keyValues):
+        result = self._cast(map(keyValues.pop, self._fields, self))
         if keyValues: # make sure all got consumed by the map
             raise ValueError('Got unexpected field names: %r' % keyValues.keys())
         self._tuple = result
@@ -51,7 +64,6 @@ class RecordType(object):
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
         return iter(self._tuple)
-
 
     def __repr__(self):
         'Format the representation string for better printing'
@@ -72,14 +84,17 @@ def genRecordType(header):
     Designed to have lightweight instances while having many convenient ways
     to access the data.
     """
-
     if isinstance(header, BasicDataset):
         rawFields = tuple(h for h in header.getColumnNames())
     else:
         rawFields = tuple(h for h in header)    
 
+    numericFieldPrefix = 'C'
     unsafePattern = re.compile('[^a-zA-Z0-9_]')
     sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]
+    for i,field in enumerate(sanitizedFields):
+        if field[0].isdigit():
+            sanitizedFields[i] = '%s%s' % (numericFieldPrefix, field)
 
     dupeCheck = set()
     for i,(sf,f) in enumerate(zip(sanitizedFields, rawFields)):
