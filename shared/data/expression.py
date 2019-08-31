@@ -166,3 +166,18 @@ def convert_to_postfix(expression):
         output.append(opstack.pop())
     
     return tuple(output)
+
+
+
+# TESTS
+raise KeboardInterrupt
+
+print convert_to_postfix( '1 + 2 * 3' )
+print convert_to_postfix( '1 + (2 * 3)' )
+print convert_to_postfix( '(1 + (2 * 3))' )
+print convert_to_postfix( '(1 + ((2) * 3))' )
+
+((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
