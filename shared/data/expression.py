@@ -174,6 +174,150 @@ def convert_to_postfix(expression):
     return tuple(output)
 
 
+CONSTANT_REFERENCE = -2
+ARGUMENT_REFERENCE = -4
+FUNCTION_REFERENCE = -8
+
+class Expression(object):
+    
+    __slots__ = ('_arguments', '_fields', 
+                 '_constants', 
+                 '_functions',
+                 '_eval_func'
+                )
+    
+    _reference_names = {
+        FUNCTION_REFERENCE: '_functions',
+        ARGUMENT_REFERENCE: '_arguments',
+        CONSTANT_REFERENCE: '_constants',
+    }
+    
+    
+    def __init__(self, expression):
+        # convert the expression to something we can resolve reliably
+        postfixStack = convert_to_postfix(expression)
+        # ... and map it to the properties here
+        self._resolve_function(postfixStack)
+    
+    
+#     def _get_attribute_name(self, refType, index):
+#         return '%s_%d' % (self._reference_names[refType], index)
+
+    def _resolve_function(self, postfixStack):
+        
+        arguments = []
+        constants = []
+        functions = []
+        opstack = []
+    
+        for tokenType,token in postfixStack:
+
+            if tokenType == tokenize.OP:
+                if token in one_argument_operators:
+                    (argType1,argIx1)= opstack.pop()
+                    
+                    argRef1 = self._reference_names[argType1]
+                    
+                    functions.append(one_argument_operators[token])
+                    oix = len(functions) - 1
+                    
+                    if argType1 == FUNCTION_REFERENCE:
+                        def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1):
+                            return self._functions[oix](ar1[aix1]())
+                    else:
+                        def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1):
+                            return self._functions[oix](ar1[aix1])
+                    
+                    functions.append(function)
+                    fix = len(functions) - 1
+                    opstack.append( (FUNCTION_REFERENCE, fix) )
+
+                elif token in two_argument_operators: 
+                    (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
+                    
+                    argRef1 = self._reference_names[argType1]
+                    argRef2 = self._reference_names[argType2]
+                    
+                    functions.append(two_argument_operators[token])
+                    oix = len(functions) - 1
+                    
+                    # Resolve the way we call the arguments in
+                    #   it needs a late binding, so it kind of has to be broken out like this 
+                    #   (I don't know how to do this without adding more indirection)
+                    if argType1 == FUNCTION_REFERENCE:
+                        if argType2 == FUNCTION_REFERENCE:
+                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
+                                return self._functions[oix](getattr(self, ar1)[aix1](), 
+                                                            getattr(self, ar2)[aix2]())
+                        else:
+                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
+                                return self._functions[oix](getattr(self, ar1)[aix1](), 
+                                                            getattr(self, ar2)[aix2])
+                    else:
+                        if argType2 == FUNCTION_REFERENCE:                            
+                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
+                                return self._functions[oix](getattr(self, ar1)[aix1], 
+                                                            getattr(self, ar2)[aix2]())
+                        else:
+                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
+                                return self._functions[oix](getattr(self, ar1)[aix1], 
+                                                            getattr(self, ar2)[aix2])
+
+                    functions.append(function)
+                    fix = len(functions) - 1
+                    opstack.append( (FUNCTION_REFERENCE, fix) )
+
+            elif tokenType == tokenize.NAME:
+                # Check if it's a variable or module we trust
+                # as we encounter the '.' operator, whitelist
+                if False and resolved:
+
+                    pass
+
+                else:
+                    if not token in arguments:
+                        arguments.append(token)
+                        aix = len(arguments) - 1
+                        opstack.append( (ARGUMENT_REFERENCE, aix) )
+#                         setattr(Expression, 
+#                                 '_argument_%d' % aix, 
+#                                 property(lambda self, aix=aix: self._arguments[aix]))
+#                         setattr(Expression, 
+#                                 token, 
+#                                 property(lambda self, aix=aix: self._arguments[aix]))
+
+            elif tokenType == tokenize.NUMBER:
+                constants.append(literal_eval(token))
+                cix = len(constants) - 1
+                opstack.append( (CONSTANT_REFERENCE, cix) )
+#                 setattr(Expression, 
+#                         '_constant_%d' % cix, 
+#                         property(lambda self, cix=cix: self._constants[cix]))
+
+            elif tokenType == tokenize.STRING:
+                constants.append(str(token))
+                cix = len(constants) - 1
+                opstack.append( (CONSTANT_REFERENCE, cix) )
+#                 setattr(Expression, 
+#                         '_constant_%d' % cix, 
+#                         property(lambda self, cix=cix: self._constants[cix]))
+
+
+        self._fields = tuple(arguments)
+        self._constants = tuple(constants)
+        self._functions = tuple(functions)
+        
+        _, fix = opstack.pop()
+        self._eval_func = self._functions[fix]
+
+
+    def __call__(self, *args, **kwargs):
+        self._arguments = args        
+        return self._eval_func()
+
+    
+
+
 
 # TESTS
 raise KeboardInterrupt
@@ -187,3 +331,8 @@ print convert_to_postfix( '(1 + ((2) * 3))' )
 ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
 ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
 ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+
+
+x = Expression('a + b * 3')
+assert x(1,2) == 7
+assert x(1,3) == 10
