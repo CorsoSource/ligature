@@ -139,6 +139,8 @@ def convert_to_postfix(expression):
                 #   If so, then assume it's a call, and add that to the stack instead of the '('
                 if token == '(' and output and output[-1][0] == tokenize.NAME:
                     opstack.append(output.pop())
+                elif token == '.':
+                    opstack.append(tokenTuple)
                 # Otherwise it's a normal token that has to follow the rules of precedence
                 else:
                     # get the value of this token in relation to others
@@ -158,7 +160,11 @@ def convert_to_postfix(expression):
         # All non-operators get pushed to the stack.
         # These are normal things like numbers and names
         else:
-            output.append(tokenTuple)
+            if tokenType == tokenize.NAME and opstack and opstack[-1][1] == '.':
+                output.append(tokenTuple)
+                output.append(opstack.pop())
+            else:
+                output.append(tokenTuple)
 
         #print '%-50s    %s' % ('OPS> %r' % opstack, '<OUT %r' % output)
 
