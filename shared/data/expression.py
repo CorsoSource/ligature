@@ -198,10 +198,6 @@ class Expression(object):
         postfixStack = convert_to_postfix(expression)
         # ... and map it to the properties here
         self._resolve_function(postfixStack)
-    
-    
-#     def _get_attribute_name(self, refType, index):
-#         return '%s_%d' % (self._reference_names[refType], index)
 
     def _resolve_function(self, postfixStack):
         
@@ -222,13 +218,13 @@ class Expression(object):
                     oix = len(functions) - 1
                     
                     if argType1 == FUNCTION_REFERENCE:
-                        def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1):
-                            return self._functions[oix](ar1[aix1]())
+                        functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1: self._functions[oix](
+                                            getattr(self, ar1)[aix1]()
+                                        ) )
                     else:
-                        def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1):
-                            return self._functions[oix](ar1[aix1])
-                    
-                    functions.append(function)
+                        functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1: self._functions[oix](
+                                            getattr(self, ar1)[aix1]
+                                        ) )                    
                     fix = len(functions) - 1
                     opstack.append( (FUNCTION_REFERENCE, fix) )
 
@@ -246,24 +242,26 @@ class Expression(object):
                     #   (I don't know how to do this without adding more indirection)
                     if argType1 == FUNCTION_REFERENCE:
                         if argType2 == FUNCTION_REFERENCE:
-                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
-                                return self._functions[oix](getattr(self, ar1)[aix1](), 
-                                                            getattr(self, ar2)[aix2]())
+                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                                                getattr(self, ar1)[aix1](),
+                                                getattr(self, ar2)[aix2]()
+                                            ) )
                         else:
-                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
-                                return self._functions[oix](getattr(self, ar1)[aix1](), 
-                                                            getattr(self, ar2)[aix2])
+                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                                                getattr(self, ar1)[aix1](),
+                                                getattr(self, ar2)[aix2]
+                                            ) )
                     else:
-                        if argType2 == FUNCTION_REFERENCE:                            
-                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
-                                return self._functions[oix](getattr(self, ar1)[aix1], 
-                                                            getattr(self, ar2)[aix2]())
+                        if argType2 == FUNCTION_REFERENCE:
+                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                                                getattr(self, ar1)[aix1],
+                                                getattr(self, ar2)[aix2]()
+                                            ) )
                         else:
-                            def function(self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2):
-                                return self._functions[oix](getattr(self, ar1)[aix1], 
-                                                            getattr(self, ar2)[aix2])
-
-                    functions.append(function)
+                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                                                getattr(self, ar1)[aix1],
+                                                getattr(self, ar2)[aix2]
+                                            ) )
                     fix = len(functions) - 1
                     opstack.append( (FUNCTION_REFERENCE, fix) )
 
@@ -279,28 +277,16 @@ class Expression(object):
                         arguments.append(token)
                         aix = len(arguments) - 1
                         opstack.append( (ARGUMENT_REFERENCE, aix) )
-#                         setattr(Expression, 
-#                                 '_argument_%d' % aix, 
-#                                 property(lambda self, aix=aix: self._arguments[aix]))
-#                         setattr(Expression, 
-#                                 token, 
-#                                 property(lambda self, aix=aix: self._arguments[aix]))
 
             elif tokenType == tokenize.NUMBER:
                 constants.append(literal_eval(token))
                 cix = len(constants) - 1
                 opstack.append( (CONSTANT_REFERENCE, cix) )
-#                 setattr(Expression, 
-#                         '_constant_%d' % cix, 
-#                         property(lambda self, cix=cix: self._constants[cix]))
 
             elif tokenType == tokenize.STRING:
                 constants.append(str(token))
                 cix = len(constants) - 1
                 opstack.append( (CONSTANT_REFERENCE, cix) )
-#                 setattr(Expression, 
-#                         '_constant_%d' % cix, 
-#                         property(lambda self, cix=cix: self._constants[cix]))
 
 
         self._fields = tuple(arguments)
@@ -314,6 +300,8 @@ class Expression(object):
     def __call__(self, *args, **kwargs):
         self._arguments = args        
         return self._eval_func()
+
+    
 
     
 
