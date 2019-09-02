@@ -191,6 +191,19 @@ def convert_to_postfix(expression):
     return tuple(output)
 
 
+
+def isCallable(obj):
+    try:
+        return bool(obj.__call__)
+    except AttributeError:
+        return False
+
+        
+whitelist = {
+    'math'
+}
+
+
 CONSTANT_REFERENCE = -2
 ARGUMENT_REFERENCE = -4
 FUNCTION_REFERENCE = -8
