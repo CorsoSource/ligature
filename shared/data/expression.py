@@ -213,16 +213,17 @@ class Expression(object):
                     (argType1,argIx1)= opstack.pop()
                     
                     argRef1 = self._reference_names[argType1]
-                    
-                    functions.append(one_argument_operators[token])
+
+                    function = one_argument_operators[token]
+                    functions.append(function)
                     oix = len(functions) - 1
                     
                     if argType1 == FUNCTION_REFERENCE:
-                        functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1: self._functions[oix](
+                        functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
                                             getattr(self, ar1)[aix1]()
                                         ) )
                     else:
-                        functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1: self._functions[oix](
+                        functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
                                             getattr(self, ar1)[aix1]
                                         ) )                    
                     fix = len(functions) - 1
@@ -234,7 +235,8 @@ class Expression(object):
                     argRef1 = self._reference_names[argType1]
                     argRef2 = self._reference_names[argType2]
                     
-                    functions.append(two_argument_operators[token])
+                    function = two_argument_operators[token]
+                    functions.append(function)
                     oix = len(functions) - 1
                     
                     # Resolve the way we call the arguments in
@@ -242,23 +244,23 @@ class Expression(object):
                     #   (I don't know how to do this without adding more indirection)
                     if argType1 == FUNCTION_REFERENCE:
                         if argType2 == FUNCTION_REFERENCE:
-                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 getattr(self, ar1)[aix1](),
                                                 getattr(self, ar2)[aix2]()
                                             ) )
                         else:
-                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 getattr(self, ar1)[aix1](),
                                                 getattr(self, ar2)[aix2]
                                             ) )
                     else:
                         if argType2 == FUNCTION_REFERENCE:
-                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 getattr(self, ar1)[aix1],
                                                 getattr(self, ar2)[aix2]()
                                             ) )
                         else:
-                            functions.append(lambda self=self, oix=oix, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: self._functions[oix](
+                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 getattr(self, ar1)[aix1],
                                                 getattr(self, ar2)[aix2]
                                             ) )
@@ -302,7 +304,6 @@ class Expression(object):
         return self._eval_func()
 
     
-
     
 
 
