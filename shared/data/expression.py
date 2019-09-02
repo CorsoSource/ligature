@@ -201,10 +201,16 @@ class Expression(object):
 
     def _resolve_function(self, postfixStack):
         
-        arguments = []
-        constants = []
-        functions = []
+        self._arguments = []
+        self._constants = []
+        self._functions = []
         opstack = []
+    
+        references = {
+            FUNCTION_REFERENCE: self._functions,
+            ARGUMENT_REFERENCE: self._arguments,
+            CONSTANT_REFERENCE: self._constants,
+        }
     
         for tokenType,token in postfixStack:
 
@@ -212,59 +218,59 @@ class Expression(object):
                 if token in one_argument_operators:
                     (argType1,argIx1)= opstack.pop()
                     
-                    argRef1 = self._reference_names[argType1]
+                    argRef1 = references[argType1]
 
                     function = one_argument_operators[token]
-                    functions.append(function)
-                    oix = len(functions) - 1
+                    self._functions.append(function)
+                    oix = len(self._functions) - 1
                     
                     if argType1 == FUNCTION_REFERENCE:
-                        functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
-                                            getattr(self, ar1)[aix1]()
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]()
                                         ) )
                     else:
-                        functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
-                                            getattr(self, ar1)[aix1]
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]
                                         ) )                    
-                    fix = len(functions) - 1
+                    fix = len(self._functions) - 1
                     opstack.append( (FUNCTION_REFERENCE, fix) )
 
                 elif token in two_argument_operators: 
                     (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
                     
-                    argRef1 = self._reference_names[argType1]
-                    argRef2 = self._reference_names[argType2]
+                    argRef1 = references[argType1]
+                    argRef2 = references[argType2]
                     
                     function = two_argument_operators[token]
-                    functions.append(function)
-                    oix = len(functions) - 1
+                    self._functions.append(function)
+                    oix = len(self._functions) - 1
                     
                     # Resolve the way we call the arguments in
                     #   it needs a late binding, so it kind of has to be broken out like this 
                     #   (I don't know how to do this without adding more indirection)
                     if argType1 == FUNCTION_REFERENCE:
                         if argType2 == FUNCTION_REFERENCE:
-                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
-                                                getattr(self, ar1)[aix1](),
-                                                getattr(self, ar2)[aix2]()
+                            self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
+                                                ar1[aix1](),
+                                                ar2[aix2]()
                                             ) )
                         else:
-                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
-                                                getattr(self, ar1)[aix1](),
-                                                getattr(self, ar2)[aix2]
+                            self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
+                                                ar1[aix1](),
+                                                ar2[aix2]
                                             ) )
                     else:
                         if argType2 == FUNCTION_REFERENCE:
-                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
-                                                getattr(self, ar1)[aix1],
-                                                getattr(self, ar2)[aix2]()
+                            self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
+                                                ar1[aix1],
+                                                ar2[aix2]()
                                             ) )
                         else:
-                            functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
-                                                getattr(self, ar1)[aix1],
-                                                getattr(self, ar2)[aix2]
+                            self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
+                                                ar1[aix1],
+                                                ar2[aix2]
                                             ) )
-                    fix = len(functions) - 1
+                    fix = len(self._functions) - 1
                     opstack.append( (FUNCTION_REFERENCE, fix) )
 
             elif tokenType == tokenize.NAME:
@@ -275,33 +281,34 @@ class Expression(object):
                     pass
 
                 else:
-                    if not token in arguments:
-                        arguments.append(token)
-                        aix = len(arguments) - 1
+                    if not token in self._arguments:
+                        self._arguments.append(token)
+                        aix = len(self._arguments) - 1
                         opstack.append( (ARGUMENT_REFERENCE, aix) )
 
             elif tokenType == tokenize.NUMBER:
-                constants.append(literal_eval(token))
-                cix = len(constants) - 1
+                self._constants.append(literal_eval(token))
+                cix = len(self._constants) - 1
                 opstack.append( (CONSTANT_REFERENCE, cix) )
 
             elif tokenType == tokenize.STRING:
-                constants.append(str(token))
-                cix = len(constants) - 1
+                self._constants.append(str(token))
+                cix = len(self._constants) - 1
                 opstack.append( (CONSTANT_REFERENCE, cix) )
 
 
-        self._fields = tuple(arguments)
-        self._constants = tuple(constants)
-        self._functions = tuple(functions)
+        self._fields = tuple(self._arguments)
+        self._arguments[:] = []
         
         _, fix = opstack.pop()
         self._eval_func = self._functions[fix]
 
 
     def __call__(self, *args, **kwargs):
-        self._arguments = args        
+        self._arguments[:] = args        
         return self._eval_func()
+
+    
 
     
     
