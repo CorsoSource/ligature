@@ -129,6 +129,19 @@ def convert_to_postfix(expression):
                 # If the parens was preceded by a call, now move that to the output
                 if opstack and opstack[-1][0] == tokenize.NAME:
                     output.append(opstack.pop())
+                    
+                    # Count the compounding
+                    dots = 0
+                    while opstack and opstack[-1][0] == tokenize.NAME:
+                        dots += 1
+                        output.append(opstack.pop())
+                    for i in range(dots):
+                        if opstack and opstack[-1][0] == tokenize.OP and opstack[-1][1] == '.':
+                            output.append(opstack.pop())
+                        else:
+                            raise AttributeError("Unexpected token: was expecting the '.' operator, but the stack is this instead\nopstack:%s\noutput:%s" % (
+                                str(opstack), str(output)))
+                        
                 # ... otherwise it must just be the opening parens operator
                 else:
                     _ = opstack.pop()
@@ -138,7 +151,15 @@ def convert_to_postfix(expression):
                 # If we're starting a parenthetical group, check if there's a name right before it.
                 #   If so, then assume it's a call, and add that to the stack instead of the '('
                 if token == '(' and output and output[-1][0] == tokenize.NAME:
-                    opstack.append(output.pop())
+                    # Check if this is a compound attribute, if so pop an extra off
+                    if opstack and opstack[-1][0] == tokenize.OP and opstack[-1][1] == '.':
+                        opstack.append(output.pop())
+                        if output and output[-1][0] == tokenize.NAME:
+                            opstack.append(output.pop())
+                        else:
+                            raise NotImplementedError('Attributes in expressions must be on named tokens')
+                    else:
+                        opstack.append(output.pop())
                 elif token == '.':
                     opstack.append(tokenTuple)
                 # Otherwise it's a normal token that has to follow the rules of precedence
@@ -160,11 +181,7 @@ def convert_to_postfix(expression):
         # All non-operators get pushed to the stack.
         # These are normal things like numbers and names
         else:
-            if tokenType == tokenize.NAME and opstack and opstack[-1][1] == '.':
-                output.append(tokenTuple)
-                output.append(opstack.pop())
-            else:
-                output.append(tokenTuple)
+            output.append(tokenTuple)
 
         #print '%-50s    %s' % ('OPS> %r' % opstack, '<OUT %r' % output)
 
@@ -177,64 +194,81 @@ def convert_to_postfix(expression):
 CONSTANT_REFERENCE = -2
 ARGUMENT_REFERENCE = -4
 FUNCTION_REFERENCE = -8
+EXTERNAL_REFERENCE = -16
+
 
 class Expression(object):
     
-    __slots__ = ('_arguments', '_fields', 
-                 '_constants', 
-                 '_functions',
-                 '_eval_func'
+    __slots__ = ('_fields', '_eval_func',
+                 '_arguments', '_constants', '_functions', '_externals'
                 )
     
-    _reference_names = {
-        FUNCTION_REFERENCE: '_functions',
-        ARGUMENT_REFERENCE: '_arguments',
-        CONSTANT_REFERENCE: '_constants',
-    }
-    
-    
     def __init__(self, expression):
-        # convert the expression to something we can resolve reliably
-        postfixStack = convert_to_postfix(expression)
-        # ... and map it to the properties here
-        self._resolve_function(postfixStack)
-
+        if isinstance(expression, str):
+            # convert the expression to something we can resolve reliably
+            postfixStack = convert_to_postfix(expression)
+            # ... and map it to the properties here
+            self._resolve_function(postfixStack)
+        else:
+            self._resolve_function(expression)
+        
     def _resolve_function(self, postfixStack):
         
         self._arguments = []
         self._constants = []
         self._functions = []
+        self._externals = []
         opstack = []
     
         references = {
             FUNCTION_REFERENCE: self._functions,
             ARGUMENT_REFERENCE: self._arguments,
             CONSTANT_REFERENCE: self._constants,
+            EXTERNAL_REFERENCE: self._externals,
         }
     
         for tokenType,token in postfixStack:
 
             if tokenType == tokenize.OP:
-                if token in one_argument_operators:
-                    (argType1,argIx1)= opstack.pop()
-                    
-                    argRef1 = references[argType1]
 
-                    function = one_argument_operators[token]
-                    self._functions.append(function)
-                    oix = len(self._functions) - 1
+                if token == '.':
+                    #raise NotImplementedError('Better to preprocess and resolve first')
                     
-                    if argType1 == FUNCTION_REFERENCE:
-                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
-                                            ar1[aix1]()
-                                        ) )
+                    # though not strictly necessary since the dot will work as a normal operator, 
+                    #   this will resolve down and optimize a bit
+                    (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
+                    
+                    if argType1 == FUNCTION_REFERENCE and self._functions[argIx2] in self._externals and argType2 == ARGUMENT_REFERENCE:
+                        
+                        attribute = self._arguments.pop(argIx2)
+                        
+                        external = getattr(self._functions[argIx1], attribute)
+                        self._externals.append(external)
+                        
+                        if isCallable(external):
+                            argType3,argIx3 = opstack.pop()
+                            argRef3 = references[argType3]
+                            
+                            if argType3 == FUNCTION_REFERENCE:
+                                self._functions.append(lambda function=external, ar1=argRef3, aix1=argIx3: function(
+                                                    ar1[aix1]()
+                                                ) )
+                            else:
+                                self._functions.append(lambda function=external, ar1=argRef3, aix1=argIx3: function(
+                                                    ar1[aix1]
+                                                ) )
+
+                            opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                        else:
+                            self._constants.append(external)
+                            opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
+#                         self._externals.append(getattr(self._externals[argIx1], attribute))
+#                         opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
+                        
                     else:
-                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
-                                            ar1[aix1]
-                                        ) )                    
-                    fix = len(self._functions) - 1
-                    opstack.append( (FUNCTION_REFERENCE, fix) )
-
+                        raise AttributeError('Not sure what to do with this:\nArg 1: type:%s %s\nArg 2: type:%s %s' (argType1,argIx1,argType2,argIx2))
+                    
+                
                 elif token in two_argument_operators: 
                     (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
                     
@@ -242,8 +276,6 @@ class Expression(object):
                     argRef2 = references[argType2]
                     
                     function = two_argument_operators[token]
-                    self._functions.append(function)
-                    oix = len(self._functions) - 1
                     
                     # Resolve the way we call the arguments in
                     #   it needs a late binding, so it kind of has to be broken out like this 
@@ -270,33 +302,51 @@ class Expression(object):
                                                 ar1[aix1],
                                                 ar2[aix2]
                                             ) )
-                    fix = len(self._functions) - 1
-                    opstack.append( (FUNCTION_REFERENCE, fix) )
+                            
+                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
 
+                if token in one_argument_operators:
+                    (argType1,argIx1)= opstack.pop()
+                    
+                    argRef1 = references[argType1]
+                    
+                    if argType1 == FUNCTION_REFERENCE:
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]()
+                                        ) )
+                    else:
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]
+                                        ) )
+                        
+                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                    
             elif tokenType == tokenize.NAME:
                 # Check if it's a variable or module we trust
                 # as we encounter the '.' operator, whitelist
-                if False and resolved:
-
-                    pass
+                external = token in whitelist
+                if external:
+                    # math.sin(x) --> ((1, 'math'), (1, 'sin'), (51, '.'), (1, 'x'))
+                    self._externals.append(import_module(token))
+                    self._functions.append(self._externals[-1])
+                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                    #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
 
                 else:
                     if not token in self._arguments:
                         self._arguments.append(token)
-                        aix = len(self._arguments) - 1
-                        opstack.append( (ARGUMENT_REFERENCE, aix) )
+                        opstack.append( (ARGUMENT_REFERENCE, len(self._arguments) - 1) )
 
             elif tokenType == tokenize.NUMBER:
                 self._constants.append(literal_eval(token))
-                cix = len(self._constants) - 1
-                opstack.append( (CONSTANT_REFERENCE, cix) )
+                opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
 
             elif tokenType == tokenize.STRING:
                 self._constants.append(str(token))
-                cix = len(self._constants) - 1
-                opstack.append( (CONSTANT_REFERENCE, cix) )
+                opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
 
-
+            #print [(t,ix,references[t][ix]) for t,ix in opstack]
+            
         self._fields = tuple(self._arguments)
         self._arguments[:] = []
         
@@ -310,6 +360,8 @@ class Expression(object):
         else:
             self._arguments[:] = args        
         return self._eval_func()
+
+    
 
     
 
