@@ -2,10 +2,14 @@ from .compose import Composable
 from .scanner import Scanner
 from .recordset import RecordSet
 from .record import genRecordType
+from .expression import Expression
 
 
 def getArguments(function):
-    return function.__code__.co_varnames[:function.__code__.co_argcount]
+    if isinstance(function, Expression):
+        return function._fields
+    else:
+        return function.__code__.co_varnames[:function.__code__.co_argcount]
 
 
 class Calculation(Composable):
@@ -22,7 +26,12 @@ class Calculation(Composable):
         self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
         self.subscribe(self._resultSet)
         self.sources = tuple(sources)
-        self.function = function
+
+        if isinstance(function, (str,unicode)):
+            self.function = Expression(function)
+        else:
+            self.function = function
+            
         self._mapInputs = mapInputs
         self._resolveSources()
     
