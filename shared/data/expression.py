@@ -384,19 +384,19 @@ class Expression(object):
 
 
 # TESTS
-raise KeboardInterrupt
+# raise KeboardInterrupt
 
-print convert_to_postfix( '1 + 2 * 3' )
-print convert_to_postfix( '1 + (2 * 3)' )
-print convert_to_postfix( '(1 + (2 * 3))' )
-print convert_to_postfix( '(1 + ((2) * 3))' )
+# print convert_to_postfix( '1 + 2 * 3' )
+# print convert_to_postfix( '1 + (2 * 3)' )
+# print convert_to_postfix( '(1 + (2 * 3))' )
+# print convert_to_postfix( '(1 + ((2) * 3))' )
 
-((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
-((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
-((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
-((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+# ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+# ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+# ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
+# ((2, '1'), (2, '2'), (2, '3'), (51, '*'), (51, '+'))
 
 
-x = Expression('a + b * 3')
-assert x(1,2) == 7
-assert x(1,3) == 10
+# x = Expression('a + b * 3')
+# assert x(1,2) == 7
+# assert x(1,3) == 10
