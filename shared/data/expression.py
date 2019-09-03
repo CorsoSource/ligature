@@ -1,5 +1,7 @@
+import __builtin__
 import operator as op
 import tokenize
+from importlib import import_module
 from StringIO import StringIO
 
 
@@ -168,12 +170,10 @@ def convert_to_postfix(expression):
                     tokenPrecedence = precedenceLookup[token]
                     # ... and drain the opstack of things that should come first
                     while (opstack 
-                           and precedenceLookup.get(opstack[-1][1],-20) > tokenPrecedence 
+                           and precedenceLookup.get(opstack[-1][1],-20) >= tokenPrecedence 
                            and not (opstack[-1][0] == tokenize.OP
                                     and opstack[-1][1] in ('(','[','{'))):
                         opToken = opstack.pop()
-#                         if not (opToken[0] == tokenize.OP and opToken[1] in ('(',')')):
-#                             output.append(opToken)
                         output.append(opToken)
                     # ... and once we know this is the highest precedence operation, add it to the stack
                     opstack.append(tokenTuple)
@@ -191,7 +191,6 @@ def convert_to_postfix(expression):
     return tuple(output)
 
 
-
 def isCallable(obj):
     try:
         return bool(obj.__call__)
@@ -199,8 +198,14 @@ def isCallable(obj):
         return False
 
         
-whitelist = {
+whitelisted_modules = {
+    'shared',
     'math'
+}
+
+
+whitelisted_builtins = {
+    'max','min'
 }
 
 
@@ -239,6 +244,14 @@ class Expression(object):
             CONSTANT_REFERENCE: self._constants,
             EXTERNAL_REFERENCE: self._externals,
         }
+        
+        reference_names = {
+            FUNCTION_REFERENCE: 'func',
+            ARGUMENT_REFERENCE: 'args',
+            CONSTANT_REFERENCE: 'const',
+            EXTERNAL_REFERENCE: 'ext',
+        }
+        
     
         for tokenType,token in postfixStack:
 
@@ -251,7 +264,7 @@ class Expression(object):
                     #   this will resolve down and optimize a bit
                     (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
                     
-                    if argType1 == FUNCTION_REFERENCE and self._functions[argIx2] in self._externals and argType2 == ARGUMENT_REFERENCE:
+                    if argType1 == FUNCTION_REFERENCE and self._functions[argIx1] in self._externals and argType2 == ARGUMENT_REFERENCE:
                         
                         attribute = self._arguments.pop(argIx2)
                         
@@ -275,8 +288,8 @@ class Expression(object):
                         else:
                             self._constants.append(external)
                             opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
-#                         self._externals.append(getattr(self._externals[argIx1], attribute))
-#                         opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
+                        #self._externals.append(getattr(self._externals[argIx1], attribute))
+                        #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
                         
                     else:
                         raise AttributeError('Not sure what to do with this:\nArg 1: type:%s %s\nArg 2: type:%s %s' (argType1,argIx1,argType2,argIx2))
@@ -337,14 +350,36 @@ class Expression(object):
             elif tokenType == tokenize.NAME:
                 # Check if it's a variable or module we trust
                 # as we encounter the '.' operator, whitelist
-                external = token in whitelist
-                if external:
+                if token in whitelisted_modules:
                     # math.sin(x) --> ((1, 'math'), (1, 'sin'), (51, '.'), (1, 'x'))
                     self._externals.append(import_module(token))
                     self._functions.append(self._externals[-1])
                     opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
                     #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
+                
+                elif token in whitelisted_builtins:
+                    
+                    function = getattr(__builtin__,token)
 
+                    self._externals.append(function)
+                    #self._functions.append(self._externals[-1])
+                    #opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+
+                    (argType1,argIx1)= opstack.pop()
+                    
+                    argRef1 = references[argType1]
+                    
+                    if argType1 == FUNCTION_REFERENCE:
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]()
+                                        ) )
+                    else:
+                        self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
+                                            ar1[aix1]
+                                        ) )
+                        
+                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )                    
+                    
                 else:
                     if not token in self._arguments:
                         self._arguments.append(token)
@@ -358,7 +393,8 @@ class Expression(object):
                 self._constants.append(str(token))
                 opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
 
-            #print [(t,ix,references[t][ix]) for t,ix in opstack]
+            # print 'Token: %s, %s' % (tokenTypeLookup[tokenType], token)
+            # print '  Opstack: ',['%s[%d]=%s' % (reference_names[t],ix,references[t][ix]) for t,ix in opstack]
             
         self._fields = tuple(self._arguments)
         self._arguments[:] = []
@@ -372,9 +408,7 @@ class Expression(object):
             self._arguments[:] = [kwargs.get(field) or args[i] for i,field  in enumerate(self._fields)]
         else:
             self._arguments[:] = args        
-        return self._eval_func()
-
-    
+        return self._eval_func()    
 
     
 
