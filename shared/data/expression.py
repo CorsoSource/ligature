@@ -1,6 +1,7 @@
 import __builtin__
 import operator as op
 import tokenize
+from ast import literal_eval
 from importlib import import_module
 from StringIO import StringIO
 
@@ -399,8 +400,11 @@ class Expression(object):
         self._fields = tuple(self._arguments)
         self._arguments[:] = []
         
-        _, fix = opstack.pop()
-        self._eval_func = self._functions[fix]
+        opType,opIx = opstack.pop()
+        if opType in (CONSTANT_REFERENCE, ARGUMENT_REFERENCE):
+            self._eval_func = lambda: references[opType][opIx]
+        else:
+            self._eval_func = references[opType][opIx]
 
 
     def __call__(self, *args, **kwargs):
