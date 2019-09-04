@@ -35,7 +35,10 @@ def overload_mul_rep(*args):
         return op.mul(*args)
 
 def extend_iterable(left,right):
-    return (left,) + tuple(right)
+    if isinstance(left, tuple):
+        return left + (right,)
+    else:
+        return (left,right)
 
 
 one_argument_operators = {
@@ -71,6 +74,7 @@ two_argument_operators = {
 
 precedence = {
     20: ['(',')','[',']'],
+    0: [','],
     1:  ['lambda'],
     #2:  ['if else'],
     3:  ['or'],

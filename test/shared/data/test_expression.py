@@ -10,6 +10,14 @@ class ExpressionTestCase(unittest.TestCase):
 	def test_parsing(self):
 		pass
 
+
+	def test_tupleing(self):
+
+		self.assertEqual(Expression( '1,2' )(), (1,2) )
+		self.assertEqual(Expression( '1,2,3,4,5' )(), (1,2,3,4,5) )
+		self.assertEqual(Expression('1,2,(3,4),5')(), (1, 2, (3, 4), 5) )
+
+
 	def test_passthru(self):
 
 		self.assertEqual(Expression( 'math.pi' )(), math.pi)
