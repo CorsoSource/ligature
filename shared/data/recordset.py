@@ -97,8 +97,6 @@ class RecordSet(GraphModel,UpdateModel):
             scanner.updateCursorsForRemoval(safeGroupIx)
 
 
-
-
     # INIT
     def _initializeDataSet(self, dataset, validate=False):
         """Convert the DataSet type into a RecordSet
@@ -196,15 +194,40 @@ class RecordSet(GraphModel,UpdateModel):
     
     # Iterable 
     # Sequence
-    def __getitem__(self, index):
-        for gix,group in enumerate(self._groups):
-            if len(group) > index:
-                return group[index]
-            index -= len(group)
+    
+    def __getitem__(self, selector):
+        """Get a particular set of records given the selector.
+           Note that this is record-centric, like the iterator.
+        """
+        if isinstance(selector, tuple):
+            column,slicer = selector
+            return self.column(column)[slicer]
+        elif isinstance(selector, slice):
+            return islice(self.records, selector)     
+        elif isinstance(selector, int):
+            index = selector
+            for group in self._groups:
+                if len(group) > index:
+                    return group[index]
+                index -= len(group)
+            else:
+                raise IndexError("There are not enough records in the groups to meet the index %d" % index)
         else:
-            raise IndexError("There are not enough records in the groups to meet the index %d" % index)
-        #return self._groups[index]
-
+            raise NotImplementedError("The selector '%r' is not implemented")
+            #return self._groups[selector]
+    
+    @property
+    def groups(self):
+        return (group 
+                for group 
+                in self._groups)
+    
+    @property
+    def records(self):
+        return (record 
+                for group in self._groups 
+                for record in group)
+    
     def __iter__(self):
         return self.records
         #return (recordGroup for recordGroup in self._groups)
@@ -297,28 +320,6 @@ class RecordSet(GraphModel,UpdateModel):
         else:
             self.extend(addition)
         return self
-    
-    def __getitem__(self, selector):
-        """Get a particular set of groups if a slice is provided, 
-             otherwise assume it's an index reference. 
-        """
-        if isinstance(selector, tuple):
-            column,slicer = selector
-            return self.column(column)[slicer]
-        else:
-            return self._groups[selector]
-    
-    @property
-    def groups(self):
-        return (group 
-                for group 
-                in self._groups)
-    
-    @property
-    def records(self):
-        return (record 
-                for group in self._groups 
-                for record in group)
     
     def _graph_attributes(self):
         fields = ', '.join(self._RecordType._fields)
