@@ -197,10 +197,17 @@ class RecordSet(GraphModel,UpdateModel):
     # Iterable 
     # Sequence
     def __getitem__(self, index):
-        return self._groups[index]
+        for gix,group in enumerate(self._groups):
+            if len(group) > index:
+                return group[index]
+            index -= len(group)
+        else:
+            raise IndexError("There are not enough records in the groups to meet the index %d" % index)
+        #return self._groups[index]
 
     def __iter__(self):
-        return (recordGroup for recordGroup in self._groups)
+        return self.records
+        #return (recordGroup for recordGroup in self._groups)
 
     # Container
     def __contains__(self, search):
