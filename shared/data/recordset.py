@@ -186,8 +186,7 @@ class RecordSet(GraphModel,UpdateModel):
     
     def coerceRecordType(self, record):
         return self._RecordType(record)
- 
-    
+
     # Sized
     def __len__(self):
         """Not terribly useful - this only tells how many chunks there are in the RecordSet.
@@ -303,7 +302,13 @@ class RecordSet(GraphModel,UpdateModel):
             return self._groups[selector]
     
     @property
-    def _records(self):
+    def groups(self):
+        return (group 
+                for group 
+                in self._groups)
+    
+    @property
+    def records(self):
         return (record 
                 for group in self._groups 
                 for record in group)
@@ -321,8 +326,8 @@ class RecordSet(GraphModel,UpdateModel):
                
     def __repr__(self, elideLimit=20):
         'Format the representation string for better printing'
-        records = list(islice((r for r in self._records), elideLimit))
-        totalRecordCount = sum(len(g) for g in self._groups)
+        records = list(islice((r for r in self.records), elideLimit))
+        totalRecordCount = sum(len(g) for g in self.groups)
         out = ['RecordSet with %d groups of %d records' % (len(self), totalRecordCount)]
         # preprocess
         maxWidths = [max([len(f)] + [len(repr(v))+1 for v in column]) 
@@ -331,8 +336,8 @@ class RecordSet(GraphModel,UpdateModel):
                             zip(*records) 
                                if records 
                                else ['']*len(self._RecordType._fields))]
-        digits = math.floor(math.log10(elideLimit)) + 1
-        maxGixWidth = math.floor(math.log10(len(self._groups))) + 1
+        digits = math.floor(math.log10(elideLimit or 1)) + 1
+        maxGixWidth = math.floor(math.log10(len(self._groups) or 1)) + 1
         prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]

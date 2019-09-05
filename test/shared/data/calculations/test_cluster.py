@@ -22,7 +22,7 @@ class ClusterTestCase(unittest.TestCase):
 
 		# When evaluated, we get the following
 		self.assertEqual(
-			[[v.c for v in group] for group in c.results],
+			[[v.c for v in group] for group in c.results.groups],
 			[[1, 3, 3, 5], [5, 7], [7, 9, 9]]
 			)
 
@@ -34,7 +34,7 @@ class ClusterTestCase(unittest.TestCase):
 		# but upon evaluation we see an update has been applied
 		# note that this maintains groups
 		self.assertEqual(
-			[[v.c for v in group] for group in c.results],
+			[[v.c for v in group] for group in c.results.groups],
 			[[1, 3, 3, 5], [5, 7], [7, 9, 9], [12, 12, 14], [14, 16, 16]]
 			)
 

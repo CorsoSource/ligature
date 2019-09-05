@@ -22,7 +22,7 @@ class WindowTestCase(unittest.TestCase):
 
 		# When evaluated, we get the following
 		self.assertEqual(
-			[[v.c for v in group] for group in c.results],
+			[[v.c for v in group] for group in c.results.groups],
 			[[8, 10, 23]]
 			)
 
@@ -34,7 +34,7 @@ class WindowTestCase(unittest.TestCase):
 		# but upon evaluation we see an update has been applied
 		# note that this addition is ONE update - groups are not maintained
 		self.assertEqual(
-			[[v.c for v in group] for group in c.results],
+			[[v.c for v in group] for group in c.results.groups],
 			[[8, 10, 23], [34, 44]]
 			)
 
