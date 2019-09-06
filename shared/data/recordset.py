@@ -213,7 +213,7 @@ class RecordSet(GraphModel,UpdateModel):
             else:
                 raise IndexError("There are not enough records in the groups to meet the index %d" % index)
         else:
-            raise NotImplementedError("The selector '%r' is not implemented")
+            raise NotImplementedError("The selector '%r' is not implemented" % selector)
             #return self._groups[selector]
     
     @property
