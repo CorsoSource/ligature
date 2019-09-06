@@ -1,3 +1,6 @@
+from weakref import WeakSet
+
+
 class UpdateModel(object):
     """Provide the object with a way to notify other objects
       that depend on it.
@@ -15,7 +18,7 @@ class UpdateModel(object):
         # It expects to be a base class
         #super(UpdateModel, self).__init__(*args, **kwargs)
         self._sources = tuple()
-        self._listeners = list()
+        self._listeners = WeakSet()
         
     def subscribe(self, listener):
         """Add a listener to the subscriber list.
@@ -26,7 +29,7 @@ class UpdateModel(object):
           (In case we want to backtrace.)
         """
         if not listener in self._listeners:
-            self._listeners.append(listener)
+            self._listeners.add(listener)
     
     def unsubscribe(self, listener):
         """Remove a listener from the subscriber list.

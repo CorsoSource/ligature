@@ -31,7 +31,7 @@ class MergeTestCase(unittest.TestCase):
 			)
 
 		self.assertEqual(
-			merge.results[0][0]._tuple,
+			merge.results._groups[0][0]._tuple,
 			(1, 1, 9) 
 			)
 

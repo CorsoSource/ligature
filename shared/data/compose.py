@@ -52,7 +52,7 @@ class Composable(GraphModel,UpdateModel):
     
     @updateFirst
     def __iter__(self):
-        return (group for group in self.results)
+        return (group for group in self.results.groups)
 
     @updateFirst
     def __getitem__(self, selector):
