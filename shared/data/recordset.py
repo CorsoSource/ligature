@@ -97,8 +97,6 @@ class RecordSet(GraphModel,UpdateModel):
             scanner.updateCursorsForRemoval(safeGroupIx)
 
 
-
-
     # INIT
     def _initializeDataSet(self, dataset, validate=False):
         """Convert the DataSet type into a RecordSet
@@ -186,8 +184,7 @@ class RecordSet(GraphModel,UpdateModel):
     
     def coerceRecordType(self, record):
         return self._RecordType(record)
- 
-    
+
     # Sized
     def __len__(self):
         """Not terribly useful - this only tells how many chunks there are in the RecordSet.
@@ -197,11 +194,43 @@ class RecordSet(GraphModel,UpdateModel):
     
     # Iterable 
     # Sequence
-    def __getitem__(self, index):
-        return self._groups[index]
-
+    
+    def __getitem__(self, selector):
+        """Get a particular set of records given the selector.
+           Note that this is record-centric, like the iterator.
+        """
+        if isinstance(selector, tuple):
+            column,slicer = selector
+            return self.column(column)[slicer]
+        elif isinstance(selector, slice):
+            return islice(self.records, selector)     
+        elif isinstance(selector, int):
+            index = selector
+            for group in self._groups:
+                if len(group) > index:
+                    return group[index]
+                index -= len(group)
+            else:
+                raise IndexError("There are not enough records in the groups to meet the index %d" % index)
+        else:
+            raise NotImplementedError("The selector '%r' is not implemented" % selector)
+            #return self._groups[selector]
+    
+    @property
+    def groups(self):
+        return (group 
+                for group 
+                in self._groups)
+    
+    @property
+    def records(self):
+        return (record 
+                for group in self._groups 
+                for record in group)
+    
     def __iter__(self):
-        return (recordGroup for recordGroup in self._groups)
+        return self.records
+        #return (recordGroup for recordGroup in self._groups)
 
     # Container
     def __contains__(self, search):
@@ -292,22 +321,6 @@ class RecordSet(GraphModel,UpdateModel):
             self.extend(addition)
         return self
     
-    def __getitem__(self, selector):
-        """Get a particular set of groups if a slice is provided, 
-             otherwise assume it's an index reference. 
-        """
-        if isinstance(selector, tuple):
-            column,slicer = selector
-            return self.column(column)[slicer]
-        else:
-            return self._groups[selector]
-    
-    @property
-    def _records(self):
-        return (record 
-                for group in self._groups 
-                for record in group)
-    
     def _graph_attributes(self):
         fields = ', '.join(self._RecordType._fields)
         label = 'RecordSet\n%s' % fields
@@ -321,8 +334,8 @@ class RecordSet(GraphModel,UpdateModel):
                
     def __repr__(self, elideLimit=20):
         'Format the representation string for better printing'
-        records = list(islice((r for r in self._records), elideLimit))
-        totalRecordCount = sum(len(g) for g in self._groups)
+        records = list(islice((r for r in self.records), elideLimit))
+        totalRecordCount = sum(len(g) for g in self.groups)
         out = ['RecordSet with %d groups of %d records' % (len(self), totalRecordCount)]
         # preprocess
         maxWidths = [max([len(f)] + [len(repr(v))+1 for v in column]) 
@@ -331,8 +344,8 @@ class RecordSet(GraphModel,UpdateModel):
                             zip(*records) 
                                if records 
                                else ['']*len(self._RecordType._fields))]
-        digits = math.floor(math.log10(elideLimit)) + 1
-        maxGixWidth = math.floor(math.log10(len(self._groups))) + 1
+        digits = math.floor(math.log10(elideLimit or 1)) + 1
+        maxGixWidth = math.floor(math.log10(len(self._groups) or 1)) + 1
         prefixPattern = ' %%%ds  %%%ds |' % (maxGixWidth, digits)
         recordPattern = prefixPattern + ''.join(' %%%ds' % mw for mw in maxWidths)
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
