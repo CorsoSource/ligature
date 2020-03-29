@@ -89,4 +89,8 @@ class Composable(GraphModel,UpdateModel):
         self._debounce_scanners()
         
     def _apply(self):
+<<<<<<< HEAD
         raise NotImplementedError("The base composable class' apply() must be overridden.")
+=======
+        raise NotImplementedError("The base composable class' apply() must be overridden.")
+>>>>>>> icebreaker

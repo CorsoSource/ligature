@@ -46,4 +46,8 @@ class SweepTestCase(unittest.TestCase):
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(SweepTestCase)
+<<<<<<< HEAD
 unittest.TextTestRunner(verbosity=2).run(suite)
+=======
+unittest.TextTestRunner(verbosity=2).run(suite)
+>>>>>>> icebreaker

@@ -49,4 +49,8 @@ class MergeTestCase(unittest.TestCase):
 			)
 
 suite = unittest.TestLoader().loadTestsFromTestCase(MergeTestCase)
+<<<<<<< HEAD
 unittest.TextTestRunner(verbosity=2).run(suite)
+=======
+unittest.TextTestRunner(verbosity=2).run(suite)
+>>>>>>> icebreaker
