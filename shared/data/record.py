@@ -126,8 +126,4 @@ def genRecordType(header):
     else:
         setattr(Record, '_cast', lambda self,v: tuple(v))
         
-<<<<<<< HEAD
     return Record
-=======
-    return Record
->>>>>>> icebreaker

@@ -90,8 +90,4 @@ class UpdateModel(object):
             source.unsubscribe(self)
         for source in newSources:
             source.subscribe(self)
-<<<<<<< HEAD
         self._sources = newSources
-=======
-        self._sources = newSources
->>>>>>> icebreaker

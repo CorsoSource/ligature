@@ -363,8 +363,6 @@ class RecordSet(GraphModel,UpdateModel):
         if totalRecordCount > elideLimit:
             out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]   
         out += ['']
-<<<<<<< HEAD
+
         return '\n'.join(out)
-=======
-        return '\n'.join(out)
->>>>>>> icebreaker
+
