@@ -3,7 +3,7 @@
 *.sublime-*
 **/.ipynb_checkpoints/*
 
-
+dev/*
 *.sublime-workspace
 *.sublime-project
 
