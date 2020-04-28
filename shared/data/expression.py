@@ -6,12 +6,12 @@ from importlib import import_module
 from StringIO import StringIO
 
 
-tokenTypeLookup = {
-    getattr(tokenize, tokenType): tokenType
+tokenTypeLookup = dict(
+    (getattr(tokenize, tokenType), tokenType)
     for tokenType
     in dir(tokenize)
     if isinstance(getattr(tokenize, tokenType), int)
-}
+)
 
 
 def overload_concat_add(*args):
@@ -93,11 +93,11 @@ precedence = {
     #16: [(tuple), [list], {key: value},
 }
 
-precedenceLookup = {
-    token: key
+precedenceLookup = dict(
+    (token, key)
     for key,tokens in precedence.items()
     for token in tokens
-}
+)
 
 
 
@@ -229,15 +229,15 @@ def isCallable(obj):
         return False
 
         
-whitelisted_modules = {
+whitelisted_modules = set((
     'shared',
     'math'
-}
+))
 
 
-whitelisted_builtins = {
+whitelisted_builtins = set((
     'max','min'
-}
+))
 
 
 CONSTANT_REFERENCE = -2
@@ -443,4 +443,3 @@ class Expression(object):
         else:
             self._arguments[:] = args        
         return self._eval_func()    
-
