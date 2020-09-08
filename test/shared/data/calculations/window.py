@@ -45,9 +45,7 @@ class WindowTestCase(unittest.TestCase):
 			)
 
 		
-suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
-<<<<<<< HEAD
-unittest.TextTestRunner(verbosity=2).run(suite)
-=======
-unittest.TextTestRunner(verbosity=2).run(suite)
->>>>>>> icebreaker
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)
