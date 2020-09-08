@@ -48,5 +48,8 @@ class MergeTestCase(unittest.TestCase):
 			  (9, 1, 1)]]
 			)
 
-suite = unittest.TestLoader().loadTestsFromTestCase(MergeTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(MergeTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)

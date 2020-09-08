@@ -46,5 +46,7 @@ class RecordScannerTestCase(unittest.TestCase):
 			)
 
 
-suite = unittest.TestLoader().loadTestsFromTestCase(RecordScannerTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(RecordScannerTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)

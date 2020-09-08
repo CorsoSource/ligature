@@ -45,5 +45,7 @@ class ClusterTestCase(unittest.TestCase):
 			)
 
 
-suite = unittest.TestLoader().loadTestsFromTestCase(ClusterTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(ClusterTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)

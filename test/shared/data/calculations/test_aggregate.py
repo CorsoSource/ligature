@@ -45,5 +45,7 @@ class AggregateTestCase(unittest.TestCase):
 			)
 
 		
-suite = unittest.TestLoader().loadTestsFromTestCase(AggregateTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(AggregateTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)

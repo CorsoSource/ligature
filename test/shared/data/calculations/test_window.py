@@ -45,5 +45,7 @@ class WindowTestCase(unittest.TestCase):
 			)
 
 		
-suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)

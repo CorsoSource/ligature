@@ -61,6 +61,8 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 		self.assertEqual(r.values, (1, 2, 3))
 
 
-suite = unittest.TestLoader().loadTestsFromTestCase(GenerateRecordTypeTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(GenerateRecordTypeTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)
 	

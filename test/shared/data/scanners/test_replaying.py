@@ -290,9 +290,10 @@ class ReplayingGroupScannerTestCase(unittest.TestCase):
 
 
 
-suite1 = unittest.TestLoader().loadTestsFromTestCase(ReplayingElementScannerTestCase)
-suite2 = unittest.TestLoader().loadTestsFromTestCase(ReplayingChunkScannerTestCase)
-suite3 = unittest.TestLoader().loadTestsFromTestCase(ReplayingRecordScannerTestCase)
-suite4 = unittest.TestLoader().loadTestsFromTestCase(ReplayingGroupScannerTestCase)
-allTests = unittest.TestSuite([suite1, suite2, suite3, suite4])
-unittest.TextTestRunner(verbosity=2).run(allTests)
+def runTests():
+	suite1 = unittest.TestLoader().loadTestsFromTestCase(ReplayingElementScannerTestCase)
+	suite2 = unittest.TestLoader().loadTestsFromTestCase(ReplayingChunkScannerTestCase)
+	suite3 = unittest.TestLoader().loadTestsFromTestCase(ReplayingRecordScannerTestCase)
+	suite4 = unittest.TestLoader().loadTestsFromTestCase(ReplayingGroupScannerTestCase)
+	allTests = unittest.TestSuite([suite1, suite2, suite3, suite4])
+	unittest.TextTestRunner(verbosity=2).run(allTests)
