@@ -1,4 +1,4 @@
-from weakref import WeakSet
+from shared.data.compat import WeakSet, property
 
 
 class UpdateModel(object):

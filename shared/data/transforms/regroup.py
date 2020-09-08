@@ -1,6 +1,6 @@
-from ..transform import Transform
-from ..recordset import RecordSet
-from ..scanners.replaying import ReplayingGroupScanner, ReplayingRecordScanner
+from shared.data.transform import Transform
+from shared.data.recordset import RecordSet
+from shared.data.scanners.replaying import ReplayingGroupScanner, ReplayingRecordScanner
 
 from itertools import izip as zip
 

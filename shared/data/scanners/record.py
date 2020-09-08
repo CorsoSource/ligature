@@ -1,4 +1,4 @@
-from .element import ElementScanner
+from shared.data.scanners.element import ElementScanner
 
 
 class RecordScanner(ElementScanner):

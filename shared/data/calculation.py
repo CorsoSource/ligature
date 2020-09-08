@@ -1,8 +1,8 @@
-from .compose import Composable
-from .scanner import Scanner
-from .recordset import RecordSet
-from .record import genRecordType
-from .expression import Expression
+from shared.data.compose import Composable
+from shared.data.scanner import Scanner
+from shared.data.recordset import RecordSet
+from shared.data.record import genRecordType
+from shared.data.expression import Expression
 
 
 def getArguments(function):

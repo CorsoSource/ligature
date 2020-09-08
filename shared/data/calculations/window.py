@@ -1,6 +1,6 @@
 from shared.data.calculation import Calculation
-from ..scanners.chunk import ChunkScanner
-from ..calculations.sweep import Sweep
+from shared.data.scanners.chunk import ChunkScanner
+from shared.data.calculations.sweep import Sweep
 
 
 class Window(Sweep, Calculation):

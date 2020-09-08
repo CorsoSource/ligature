@@ -1,3 +1,6 @@
+from shared.data.compat import property
+
+
 def passthrough(*args):
     return args
 

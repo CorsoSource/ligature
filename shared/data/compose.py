@@ -1,7 +1,8 @@
 import functools
 
-from .update import UpdateModel
-from .graph import GraphModel
+from shared.data.compat import property
+from shared.data.update import UpdateModel
+#from shared.data.graph import GraphModel
 
 
 class MetaComposable(type):
@@ -14,7 +15,7 @@ class MetaComposable(type):
         return newclass
     
     
-class Composable(GraphModel,UpdateModel):
+class Composable(UpdateModel): #GraphModel,UpdateModel):
     """All composable classes will scan and consume data
        as well as have a result that can be chained into the next.
     """

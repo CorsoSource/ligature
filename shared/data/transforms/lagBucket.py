@@ -1,5 +1,5 @@
-from ..transform import Transform
-from ..recordset import RecordSet
+from shared.data.transform import Transform
+from shared.data.recordset import RecordSet
 from shared.data.scanners.record import RecordScanner
 
 from itertools import izip as zip

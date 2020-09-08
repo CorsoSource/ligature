@@ -1,6 +1,8 @@
 from itertools import izip as zip
 import re
 
+from shared.data.compat import property
+
 try:
     from com.inductiveautomation.ignition.common import BasicDataset
 except ImportError:

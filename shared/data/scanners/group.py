@@ -1,4 +1,4 @@
-from .chunk import ChunkScanner
+from shared.data.scanners.chunk import ChunkScanner
 
 
 class GroupScanner(ChunkScanner):

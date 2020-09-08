@@ -1,12 +1,14 @@
-from .record import RecordType, genRecordType
-from .update import UpdateModel
-from .graph import GraphModel
+from shared.data.compat import property
+
+from shared.data.record import RecordType, genRecordType
+from shared.data.update import UpdateModel
+#from shared.data.graph import GraphModel
 
 import functools, math
 from itertools import izip as zip
 from itertools import islice
 
-from weakref import WeakSet
+from shared.data.compat import WeakSet
 
 try:
     from com.inductiveautomation.ignition.common import BasicDataset
@@ -54,7 +56,7 @@ class RecordSetColumn(object):
 
         
 
-class RecordSet(GraphModel,UpdateModel):
+class RecordSet(UpdateModel): #GraphModel,UpdateModel):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence
@@ -365,4 +367,3 @@ class RecordSet(GraphModel,UpdateModel):
         out += ['']
 
         return '\n'.join(out)
-
