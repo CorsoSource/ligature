@@ -9,7 +9,8 @@ def getArguments(function):
     if isinstance(function, Expression):
         return function._fields
     else:
-        return function.__code__.co_varnames[:function.__code__.co_argcount]
+        return function.func_code.co_varnames[:function.func_code.co_argcount]
+        # return function.__code__.co_varnames[:function.__code__.co_argcount]
 
 
 class Calculation(Composable):

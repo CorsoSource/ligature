@@ -13,6 +13,17 @@ tokenTypeLookup = dict(
     if isinstance(getattr(tokenize, tokenType), int)
 )
 
+# from shared.tools.enum import MetaEnum, Enum
+
+# TOKENS = MetaEnum(
+#     'TOKENS', 
+#     (Enum,), 
+#     dict((attr,getattr(tokenize,attr)) 
+#          for attr 
+#          in dir(tokenize) 
+#          if    attr.upper() == attr 
+#            and isinstance(getattr(tokenize, attr),int)))
+
 
 def overload_concat_add(*args):
     if len(args) == 1:
@@ -297,7 +308,7 @@ class Expression(object):
                         #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
                         
                     else:
-                        raise AttributeError('Not sure what to do with this:\nArg 1: type:%s %s\nArg 2: type:%s %s' (argType1,argIx1,argType2,argIx2))
+                        raise AttributeError('Not sure what to do with this:\nArg 1: type:%s %s\nArg 2: type:%s %s' % (argType1,argIx1,argType2,argIx2))
                     
                 
                 elif token in two_argument_operators: 
