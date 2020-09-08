@@ -1,5 +1,5 @@
-from ..calculation import Calculation
-from ..scanners.chunk import ChunkScanner
+from shared.data.calculation import Calculation
+from shared.data.scanners.chunk import ChunkScanner
 
 
 class Cluster(Calculation):

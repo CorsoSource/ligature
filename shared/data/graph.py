@@ -1,4 +1,4 @@
-from .update import UpdateModel
+from shared.data.update import UpdateModel
 
 import networkx as nx
 import nxpd

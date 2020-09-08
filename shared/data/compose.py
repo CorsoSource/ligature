@@ -1,7 +1,7 @@
 import functools
 
-from .update import UpdateModel
-from .graph import GraphModel
+from shared.data.update import UpdateModel
+from shared.data.graph import GraphModel
 
 
 class MetaComposable(type):

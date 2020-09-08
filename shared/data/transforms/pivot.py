@@ -1,6 +1,6 @@
-from ..transform import Transform
-from ..recordset import RecordSet
-from ..scanners.group import GroupScanner
+from shared.data.transform import Transform
+from shared.data.recordset import RecordSet
+from shared.data.scanners.group import GroupScanner
 
 from itertools import izip as zip
 

@@ -1,8 +1,8 @@
-from ..scanner import Scanner 
-from .element import ElementScanner
-from .chunk import ChunkScanner
-from .record import RecordScanner
-from .group import GroupScanner
+from shared.data.scanner import Scanner 
+from shared.data.scanners.element import ElementScanner
+from shared.data.scanners.chunk import ChunkScanner
+from shared.data.scanners.record import RecordScanner
+from shared.data.scanners.group import GroupScanner
 
 
 class ReplayingScanner(Scanner):
