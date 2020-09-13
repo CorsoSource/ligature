@@ -19,7 +19,9 @@ class Scanner(object):
     """
     __metaclass__ = MetaScanner
     __slots__ = ('source', 'getter', 
-                 '_group_cursor', '_record_cursor')
+                 '_group_cursor', '_record_cursor',
+                 '_iterating_group', '_iterating_record',
+                 )
     
     def __init__(self, source, field=None):
         self.source = source
@@ -36,19 +38,38 @@ class Scanner(object):
         # offset low for iteration restarts if more segments get added
         self._group_cursor = 0
         self._record_cursor = 0
+        self._iterating_group = None
+        self._iterating_record = None
 
     def _iterGroup(self, group):
         try:
+            self._iterating_group = group
             for record in group[self._record_cursor:]:
                 # records in groups never get appended, so ensure it never gets over
-                self._record_cursor += 1 
+                self._record_cursor += 1
                 yield record
         finally:
-            # In case of incomplete iteration, clean up
-            if self._record_cursor == len(group): 
-                self._record_cursor= 0
-            else:
-                self._group_cursor -= 1
+            self._iterGroup_finally()
+
+    def _pending_finally(self):
+        if self._iterating_group:
+            self._iterGroup_finally()
+        if self._iterating_record:
+            self._iterRecord_finally()
+
+    def _iterGroup_finally(self):
+        # In case of incomplete iteration, clean up
+        # Note that this is needed, since the finally clause in the iterGroup does NOT run
+        #   but once PER ITERATION. That means if more than one scanner is zipped, only
+        #   the first finally is run - the rest must know they stopped incompletely!
+        if self._record_cursor == len(self._iterating_group):
+            self._record_cursor= 0
+        else:
+            self._group_cursor -= 1
+        self._iterating_group = None
+
+    def _iterRecord_finally(self):
+        pass    
 
     def __next__(self):
         return self.next()
