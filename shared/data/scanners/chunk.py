@@ -6,6 +6,7 @@ class ChunkScanner(Scanner):
        - one chunk for each group in the source.
     """
     def __iter__(self):
+        self._pending_finally()
         for group in self.source._groups[self._group_cursor:]: # error here merely stops iteration
             self._group_cursor += 1
             yield tuple(self.getter(record) for record in group)

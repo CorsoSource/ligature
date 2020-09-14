@@ -15,7 +15,7 @@ class MetaComposable(type):
         return newclass
     
     
-class Composable(UpdateModel): #GraphModel,UpdateModel):
+class Composable(GraphModel,UpdateModel):
     """All composable classes will scan and consume data
        as well as have a result that can be chained into the next.
     """

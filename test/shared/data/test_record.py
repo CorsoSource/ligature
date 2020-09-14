@@ -1,6 +1,6 @@
 import unittest
 
-from shared.corso.examples import simpleDataset
+from shared.tools.examples import simpleDataset
 
 from shared.data.record import genRecordType
 
@@ -18,7 +18,7 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 		self.assertEqual(R._fields, ('a', 'b', 'c'))
 
 		# from generator
-		R = genRecordType((h for h in ['a','b','c']))._fields
+		R = genRecordType((h for h in ['a','b','c']))
 		self.assertEqual(R._fields, ('a', 'b', 'c'))
 
 		# from DataSet
@@ -61,6 +61,8 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 		self.assertEqual(r.values, (1, 2, 3))
 
 
-suite = unittest.TestLoader().loadTestsFromTestCase(GenerateRecordTypeTestCase)
-unittest.TextTestRunner(verbosity=2).run(suite)
+
+def runTests():
+	suite = unittest.TestLoader().loadTestsFromTestCase(GenerateRecordTypeTestCase)
+	unittest.TextTestRunner(verbosity=2).run(suite)
 	
