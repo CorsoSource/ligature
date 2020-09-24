@@ -23,6 +23,21 @@ except AttributeError:
     property = _property
 
 
+try:
+    next
+except NameError:
+    _sentinel = object()
+    def next(it, default=_sentinel):
+        try:
+            return it.next()
+        except StopIteration:
+            if default is _sentinel:
+                raise
+            return default
+else:
+    locals()['next'] = next
+
+
 class _IterationGuard(object):
     # This context manager registers itself in the current iterators of the
     # weak container, such as to delay all removals until the context manager

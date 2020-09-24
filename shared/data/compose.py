@@ -2,7 +2,7 @@ import functools
 
 from shared.data.compat import property
 from shared.data.update import UpdateModel
-#from shared.data.graph import GraphModel
+from shared.data.graph import GraphModel
 
 
 class MetaComposable(type):

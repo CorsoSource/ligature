@@ -1,6 +1,7 @@
 import unittest
 
 from shared.tools.meta import sentinel
+from shared.data.compat import next
 
 from shared.data.recordset import RecordSet
 from shared.data.examples import simpleRecordSet, simpleAddition

@@ -1,4 +1,4 @@
-from shared.data.compat import property
+from shared.data.compat import property, next
 
 
 def passthrough(*args):
