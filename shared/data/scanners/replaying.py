@@ -8,12 +8,9 @@ from .group import GroupScanner
 class ReplayingScanner(Scanner):
     """Continues to yield from the same place until ready is called."""
     
-    __slots__ = ('_group_anchor', '_record_anchor', 
-                 '_iterating_group', '_iterating_record')
+    __slots__ = ('_group_anchor', '_record_anchor',)
     
     def __init__(self, *args, **kwargs):
-        self._iterating_group = False
-        self._iterating_record = False
         super(ReplayingScanner, self).__init__(*args, **kwargs)
     
     def __iter__(self):
@@ -31,7 +28,16 @@ class ReplayingScanner(Scanner):
                 yield record
         finally:
             self._iterating_record = False
-        
+
+    # Replaying scanner already is a state machine compensating for iteration weirdness.
+    # But should be refactored to match, regardless.
+    def _pending_finally(self):
+        pass
+    def _iterGroup_finally(self):
+        pass
+    def _iterRecord_finally(self):
+        pass    
+
     def reset(self):
         super(ReplayingScanner, self).reset()
         self.anchor()
