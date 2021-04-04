@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ligature",
-    version="1.1.0",
+    version="1.2.0",
     author="Andrew Geiger",
     author_email="andrew.geiger@corsosystems.com",
     description="A toy Python library for merging data, from low to high level abstractions.",

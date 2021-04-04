@@ -12,31 +12,6 @@ class ReplayingScanner(Scanner):
     
     def __init__(self, *args, **kwargs):
         super(ReplayingScanner, self).__init__(*args, **kwargs)
-    
-    def __iter__(self):
-        try:
-            self._iterating_group = True
-            for value in super(ReplayingScanner, self).__iter__():
-                yield value 
-        finally:
-            self._iterating_group = False
-    
-    def _iterGroup(self, group):
-        try:
-            self._iterating_record = True
-            for record in super(ReplayingScanner, self)._iterGroup(group):
-                yield record
-        finally:
-            self._iterating_record = False
-
-    # Replaying scanner already is a state machine compensating for iteration weirdness.
-    # But should be refactored to match, regardless.
-    def _pending_finally(self):
-        pass
-    def _iterGroup_finally(self):
-        pass
-    def _iterRecord_finally(self):
-        pass    
 
     def reset(self):
         super(ReplayingScanner, self).reset()
@@ -52,6 +27,15 @@ class ReplayingScanner(Scanner):
             self._group_anchor = self._group_cursor
         
         self._record_anchor = self._record_cursor
+
+    @property
+    def _anchored_group(self):
+        return self.source._groups[self._group_anchor]
+
+    @property
+    def _anchored_record(self):
+        return self._anchored_group[self._record_anchor]
+    
 
 
 class ReplayingElementScanner(ReplayingScanner, ElementScanner):
