@@ -113,7 +113,33 @@ def convert_to_postfix(expression):
     opstack = []
     output = []
 
-    tokens = gather_tokens(expression)
+    raw_tokens = gather_tokens(expression.strip())
+
+    # preprocess for lookups and patchwerks
+    tokens = []
+    for tokenType, token in raw_tokens:
+        if tokenType == TOKENS.OP and token == '[':
+            #tokens.append((TOKENS.OP, '.'))
+            tokens.append((TOKENS.OP, '__getitem__'))
+            tokens.append((TOKENS.OP, '('))
+        elif tokenType == TOKENS.OP and token == ']':
+            tokens.append((TOKENS.OP, ')'))
+        
+        elif tokenType == TOKENS.STRING:
+            tokens.append((TOKENS.STRING, token[1:-1]))
+        
+        elif tokenType == TOKENS.ERRORTOKEN and token.strip() == '':
+            pass
+        
+        # ensure the word-like tokens are correctly identified
+        elif tokenType == TOKENS.NAME and token in one_argument_operators:
+            tokens.append((TOKENS.OP, token))
+        
+        elif tokenType == TOKENS.NAME and token in two_argument_operators:
+            tokens.append((TOKENS.OP, token))
+        
+        else:
+            tokens.append((tokenType, token))
 
     # Handle the tokens gathered in order.
     # Assume that tokens are provided in INFIX notation
