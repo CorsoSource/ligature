@@ -1,16 +1,39 @@
+"""
+    Convert strings safely into properly executable functions (not just compiled!)
+"""
+
 import __builtin__
 import operator as op
 import tokenize
 from ast import literal_eval
-from importlib import import_module
 from StringIO import StringIO
+
+from shared.tools.enum import MetaEnum, Enum
+
+
+__copyright__ = """Copyright (C) 2020 Corso Systems"""
+__license__ = 'Apache 2.0'
+__maintainer__ = 'Andrew Geiger'
+__email__ = 'andrew.geiger@corsosystems.com'
+
+__all__ = ['Expression']
+
+TOKENS = MetaEnum(
+     'TOKENS', 
+     (Enum,), 
+     dict((attr,getattr(tokenize,attr)) 
+          for attr 
+          in dir(tokenize) 
+          if    attr.upper() == attr 
+            and isinstance(getattr(tokenize, attr),int)))
 
 
 tokenTypeLookup = dict(
-    (getattr(tokenize, tokenType), tokenType)
+    (getattr(tokenize, tokenType), getattr(TOKENS, tokenType))
     for tokenType
     in dir(tokenize)
     if isinstance(getattr(tokenize, tokenType), int)
+       and tokenType.upper() == tokenType
 )
 
 
@@ -69,6 +92,10 @@ two_argument_operators = {
     '>=': op.ge,
     '>' : op.gt,
     ',': extend_iterable,
+#   '.': getattr,
+
+     # backwards because we're hacking a parenthetical replacement, and it's like '.'
+    '__getitem__': lambda attr, obj: obj.__getitem__(attr),
 }
 
 
@@ -89,6 +116,8 @@ precedence = {
     12: ['*','/','//','%'],
     13: ['~'], # ['+','-'] # bitwise not, pos, neg
     14: ['**'],
+#   18: ['.'],
+    18: ['__getitem__']
     #15: [index, slices, x(call), x.attribute]
     #16: [(tuple), [list], {key: value},
 }
@@ -103,7 +132,7 @@ precedenceLookup = dict(
 
 def gather_tokens(expression):
     return (
-        (tokenType, token)
+        (tokenTypeLookup[tokenType], token)
         for tokenType, token, (srow,scol), (erow,ecol), line 
         in tokenize.generate_tokens(StringIO(expression).readline)
     )
@@ -153,14 +182,16 @@ def convert_to_postfix(expression):
         if tokenType == tokenize.OP:
             # Closing a group is treated a bit specially, since it can partly drain the opstack
             if token == ')':
+                
                 # Drain the stack until we get to a closing parenthesis 
                 #   or the calling function name 
                 #   (names only appear on the stack when immediately followed by a parens) 
-                while opstack and not (   opstack[-1] == (tokenize.OP,'(') 
+                while opstack and not (   (opstack[-1] == (tokenize.OP,'('))
                                        or opstack[-1][0] == tokenize.NAME):
                     output.append(opstack.pop())
                 # If the parens was preceded by a call, now move that to the output
                 if opstack and opstack[-1][0] == tokenize.NAME:
+
                     output.append(opstack.pop())
                     
                     # Count the compounding
@@ -183,9 +214,14 @@ def convert_to_postfix(expression):
             else:
                 # If we're starting a parenthetical group, check if there's a name right before it.
                 #   If so, then assume it's a call, and add that to the stack instead of the '('
-                if token == '(' and output and output[-1][0] == tokenize.NAME:
+                if token == '(' and output and (output[-1][0] == tokenize.NAME or output[-1] == (tokenize.OP, '.')):
+                    if output[-1] == (tokenize.OP, '.'):
+                        opstack.append(output.pop())    
+                        opstack.append(output.pop())
+                        opstack.append((TOKENS.OP, '('))
+                    
                     # Check if this is a compound attribute, if so pop an extra off
-                    if opstack and opstack[-1][0] == tokenize.OP and opstack[-1][1] == '.':
+                    elif opstack and opstack[-1][0] == tokenize.OP and opstack[-1][1] == '.':
                         opstack.append(output.pop())
                         if output and output[-1][0] == tokenize.NAME:
                             opstack.append(output.pop())
@@ -193,8 +229,10 @@ def convert_to_postfix(expression):
                             raise NotImplementedError('Attributes in expressions must be on named tokens')
                     else:
                         opstack.append(output.pop())
+                                    
                 elif token == '.':
                     opstack.append(tokenTuple)
+                
                 # Otherwise it's a normal token that has to follow the rules of precedence
                 else:
                     # get the value of this token in relation to others
@@ -213,8 +251,13 @@ def convert_to_postfix(expression):
         # These are normal things like numbers and names
         else:
             output.append(tokenTuple)
+            
+            # check if this gets resolved as an attribute (effectively very high precedence operator, next to () )
+            if opstack and opstack[-1][1] == '.':
+                output.append(opstack.pop())
+            
 
-        #print '%-50s    %s' % ('OPS> %r' % opstack, '<OUT %r' % output)
+        # print '=> %s\n   %-50s\n   %s\n' % (tokenTuple, '   OPS >> %r' % opstack, '<< OUT    %r' % output)
 
     while opstack:
         output.append(opstack.pop())
@@ -240,10 +283,11 @@ whitelisted_builtins = set((
 ))
 
 
-CONSTANT_REFERENCE = -2
-ARGUMENT_REFERENCE = -4
-FUNCTION_REFERENCE = -8
-EXTERNAL_REFERENCE = -16
+class REF_TYPE(Enum):
+    CONSTANT = -2
+    ARGUMENT = -4
+    FUNCTION = -8
+    EXTERNAL = -16
 
 
 class Expression(object):
@@ -270,17 +314,17 @@ class Expression(object):
         opstack = []
     
         references = {
-            FUNCTION_REFERENCE: self._functions,
-            ARGUMENT_REFERENCE: self._arguments,
-            CONSTANT_REFERENCE: self._constants,
-            EXTERNAL_REFERENCE: self._externals,
+            REF_TYPE.FUNCTION: self._functions,
+            REF_TYPE.ARGUMENT: self._arguments,
+            REF_TYPE.CONSTANT: self._constants,
+            REF_TYPE.EXTERNAL: self._externals,
         }
         
         reference_names = {
-            FUNCTION_REFERENCE: 'func',
-            ARGUMENT_REFERENCE: 'args',
-            CONSTANT_REFERENCE: 'const',
-            EXTERNAL_REFERENCE: 'ext',
+            REF_TYPE.FUNCTION: 'func',
+            REF_TYPE.ARGUMENT: 'args',
+            REF_TYPE.CONSTANT: 'const',
+            REF_TYPE.EXTERNAL: 'ext',
         }
         
     
@@ -295,7 +339,7 @@ class Expression(object):
                     #   this will resolve down and optimize a bit
                     (argType2,argIx2), (argType1,argIx1) = opstack.pop(), opstack.pop()
                     
-                    if argType1 == FUNCTION_REFERENCE and self._functions[argIx1] in self._externals and argType2 == ARGUMENT_REFERENCE:
+                    if argType1 == REF_TYPE.FUNCTION and self._functions[argIx1] in self._externals and argType2 == REF_TYPE.ARGUMENT:
                         
                         attribute = self._arguments.pop(argIx2)
                         
@@ -306,7 +350,7 @@ class Expression(object):
                             argType3,argIx3 = opstack.pop()
                             argRef3 = references[argType3]
                             
-                            if argType3 == FUNCTION_REFERENCE:
+                            if argType3 == REF_TYPE.FUNCTION:
                                 self._functions.append(lambda function=external, ar1=argRef3, aix1=argIx3: function(
                                                     ar1[aix1]()
                                                 ) )
@@ -315,15 +359,39 @@ class Expression(object):
                                                     ar1[aix1]
                                                 ) )
 
-                            opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                            opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )
                         else:
                             self._constants.append(external)
-                            opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
+                            opstack.append( (REF_TYPE.CONSTANT, len(self._constants) - 1) )
                         #self._externals.append(getattr(self._externals[argIx1], attribute))
-                        #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
+                        #opstack.append( (REF_TYPE.EXTERNAL, len(self._externals) - 1) )
+                    
+                    # This is something like a.b where a is an argument and b is some sort of attribute of that type.
+                    elif (argType1 == REF_TYPE.ARGUMENT or argType1 == REF_TYPE.FUNCTION) and argType2 == REF_TYPE.ARGUMENT:
                         
+                        argRefs = references[argType1]
+    
+                        attribute = self._arguments.pop(argIx2)
+                        
+                        # Treat as an attribute lookup on the first
+                        # Check if it needs calling before resolution, though
+                        if argType1 == REF_TYPE.ARGUMENT:
+                            self._functions.append(lambda self=self, argRefs=argRefs, aix1=argIx1, attribute=attribute: getattr(
+                                                    argRefs[aix1],
+                                                    attribute
+                                                ) )
+                        else: # argType1 == REF_TYPE.FUNCTION:
+                            self._functions.append(lambda self=self, argRefs=argRefs, aix1=argIx1, attribute=attribute: getattr(
+                                                    argRefs[aix1](),
+                                                    attribute
+                                                ) )
+
+                        opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )
+                
                     else:
-                        raise AttributeError('Not sure what to do with this:\nArg 1: type:%s %s\nArg 2: type:%s %s' (argType1,argIx1,argType2,argIx2))
+                        raise AttributeError('Not sure what to do with this:\nArg 1: %r at %s as "%r"\nArg 2: %r at %s as "%r"' % (
+                                                    argType1,argIx1,references[argType1][argIx1],
+                                                    argType2,argIx2,references[argType2][argIx2],))
                     
                 
                 elif token in two_argument_operators: 
@@ -337,8 +405,8 @@ class Expression(object):
                     # Resolve the way we call the arguments in
                     #   it needs a late binding, so it kind of has to be broken out like this 
                     #   (I don't know how to do this without adding more indirection)
-                    if argType1 == FUNCTION_REFERENCE:
-                        if argType2 == FUNCTION_REFERENCE:
+                    if argType1 == REF_TYPE.FUNCTION:
+                        if argType2 == REF_TYPE.FUNCTION:
                             self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 ar1[aix1](),
                                                 ar2[aix2]()
@@ -349,7 +417,7 @@ class Expression(object):
                                                 ar2[aix2]
                                             ) )
                     else:
-                        if argType2 == FUNCTION_REFERENCE:
+                        if argType2 == REF_TYPE.FUNCTION:
                             self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1, ar2=argRef2, aix2=argIx2: function(
                                                 ar1[aix1],
                                                 ar2[aix2]()
@@ -360,14 +428,15 @@ class Expression(object):
                                                 ar2[aix2]
                                             ) )
                             
-                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                    opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )
 
                 if token in one_argument_operators:
+                
                     (argType1,argIx1)= opstack.pop()
                     
                     argRef1 = references[argType1]
                     
-                    if argType1 == FUNCTION_REFERENCE:
+                    if argType1 == REF_TYPE.FUNCTION:
                         self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
                                             ar1[aix1]()
                                         ) )
@@ -376,17 +445,17 @@ class Expression(object):
                                             ar1[aix1]
                                         ) )
                         
-                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                    opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )
                     
             elif tokenType == tokenize.NAME:
                 # Check if it's a variable or module we trust
                 # as we encounter the '.' operator, whitelist
                 if token in whitelisted_modules:
                     # math.sin(x) --> ((1, 'math'), (1, 'sin'), (51, '.'), (1, 'x'))
-                    self._externals.append(import_module(token))
+                    self._externals.append(__import__(token))
                     self._functions.append(self._externals[-1])
-                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
-                    #opstack.append( (EXTERNAL_REFERENCE, len(self._externals) - 1) )
+                    opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )
+                    #opstack.append( (EXTERNAL, len(self._externals) - 1) )
                 
                 elif token in whitelisted_builtins:
                     
@@ -394,13 +463,13 @@ class Expression(object):
 
                     self._externals.append(function)
                     #self._functions.append(self._externals[-1])
-                    #opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )
+                    #opstack.append( (FUNCTION, len(self._functions) - 1) )
 
                     (argType1,argIx1)= opstack.pop()
                     
                     argRef1 = references[argType1]
                     
-                    if argType1 == FUNCTION_REFERENCE:
+                    if argType1 == REF_TYPE.FUNCTION:
                         self._functions.append(lambda self=self, function=function, ar1=argRef1, aix1=argIx1: function(
                                             ar1[aix1]()
                                         ) )
@@ -409,20 +478,20 @@ class Expression(object):
                                             ar1[aix1]
                                         ) )
                         
-                    opstack.append( (FUNCTION_REFERENCE, len(self._functions) - 1) )                    
+                    opstack.append( (REF_TYPE.FUNCTION, len(self._functions) - 1) )                    
                     
                 else:
                     if not token in self._arguments:
                         self._arguments.append(token)
-                        opstack.append( (ARGUMENT_REFERENCE, len(self._arguments) - 1) )
+                        opstack.append( (REF_TYPE.ARGUMENT, len(self._arguments) - 1) )
 
             elif tokenType == tokenize.NUMBER:
                 self._constants.append(literal_eval(token))
-                opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
+                opstack.append( (REF_TYPE.CONSTANT, len(self._constants) - 1) )
 
             elif tokenType == tokenize.STRING:
                 self._constants.append(str(token))
-                opstack.append( (CONSTANT_REFERENCE, len(self._constants) - 1) )
+                opstack.append( (REF_TYPE.CONSTANT, len(self._constants) - 1) )
 
             # print 'Token: %s, %s' % (tokenTypeLookup[tokenType], token)
             # print '  Opstack: ',['%s[%d]=%s' % (reference_names[t],ix,references[t][ix]) for t,ix in opstack]
@@ -431,7 +500,7 @@ class Expression(object):
         self._arguments[:] = []
         
         opType,opIx = opstack.pop()
-        if opType in (CONSTANT_REFERENCE, ARGUMENT_REFERENCE):
+        if opType in (REF_TYPE.CONSTANT, REF_TYPE.ARGUMENT):
             self._eval_func = lambda: references[opType][opIx]
         else:
             self._eval_func = references[opType][opIx]
@@ -441,5 +510,9 @@ class Expression(object):
         if kwargs:
             self._arguments[:] = [kwargs.get(field) or args[i] for i,field  in enumerate(self._fields)]
         else:
-            self._arguments[:] = args        
+            self._arguments[:] = args
+        
+        if len(self._arguments) < len(self._fields):
+            raise TypeError('Expression takes exactly %d argument%s: %r (%d given)' % (
+                                len(self._fields), 's' if len(self._fields) > 1 else '', list(self._fields), len(self._arguments)))     
         return self._eval_func()    
