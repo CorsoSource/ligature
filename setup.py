@@ -8,7 +8,7 @@ setuptools.setup(
     version="1.2.0",
     author="Andrew Geiger",
     author_email="andrew.geiger@corsosystems.com",
-    description="A toy Python library for merging data, from low to high level abstractions.",
+    description="A ~toy~ useful Python library for merging data, from low to high level abstractions.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/CorsoSource/ligature",

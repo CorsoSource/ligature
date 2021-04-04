@@ -1,4 +1,4 @@
-from shared.data.transform import Transform
+from ..transform import Transform
 
 
 class Unvacuum(Transform):

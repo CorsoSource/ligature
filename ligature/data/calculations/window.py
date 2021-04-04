@@ -1,4 +1,4 @@
-from shared.data.calculation import Calculation
+from ..calculation import Calculation
 from ..scanners.chunk import ChunkScanner
 from ..calculations.sweep import Sweep
 

@@ -1,5 +1,4 @@
-from shared.data.recordset import RecordSet
-
+from .recordset import RecordSet
 
 
 def genData(columns, rows, start=0):

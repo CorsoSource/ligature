@@ -8,7 +8,7 @@
 
 import math
 from itertools import permutations
-from shared.tools.enum import Enum
+from .enum import Enum
   
 class DIRECTION(Enum):
     IN = 'in'
