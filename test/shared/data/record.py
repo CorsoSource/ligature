@@ -1,7 +1,5 @@
 import unittest
 
-from shared.corso.examples import simpleDataset
-
 from shared.data.record import genRecordType
 
 
@@ -18,12 +16,16 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 		self.assertEqual(R._fields, ('a', 'b', 'c'))
 
 		# from generator
-		R = genRecordType((h for h in ['a','b','c']))._fields
+		R = genRecordType((h for h in ['a','b','c']))
 		self.assertEqual(R._fields, ('a', 'b', 'c'))
 
 		# from DataSet
-		R = genRecordType(simpleDataset)
-		self.assertEqual(R._fields, ('a', 'b', 'c'))
+		try:
+			from shared.data.examples import simpleDataset
+			R = genRecordType(simpleDataset)
+			self.assertEqual(R._fields, ('a', 'b', 'c'))
+		except ImportError:
+			pass
 
 
 		# One columned

@@ -1,11 +1,22 @@
 import unittest
 
-from shared.corso.meta import sentinel
-
 from shared.data.recordset import RecordSet
 from shared.data.examples import simpleRecordSet, simpleAddition
 
 from shared.data.scanners.replaying import ReplayingElementScanner, ReplayingChunkScanner, ReplayingRecordScanner, ReplayingGroupScanner
+
+
+def sentinel(iterable, stopValue):
+	"""A helper to make it simpler to implement sentinel values more idomatically.
+	This is a good way to replace a while True loop, removing the need for a break-on-value clause.
+	
+	>>> [i for i in iter((x for x in range(5)).next, 3)]
+	[0, 1, 2]
+	>>> [i for i in sentinel(range(5), 3)]
+	[0, 1, 2]
+	"""
+	return iter((x for x in iterable).next, stopValue)
+
 
 
 class ReplayingElementScannerTestCase(unittest.TestCase):
