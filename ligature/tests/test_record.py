@@ -1,6 +1,6 @@
 import unittest
 
-from shared.data.record import genRecordType
+from ligature.record import genRecordType
 
 
 class GenerateRecordTypeTestCase(unittest.TestCase):
@@ -21,7 +21,7 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 
 		# from DataSet
 		try:
-			from shared.data.examples import simpleDataset
+			from ligature.examples import simpleDataset
 			R = genRecordType(simpleDataset)
 			self.assertEqual(R._fields, ('a', 'b', 'c'))
 		except ImportError:
@@ -63,8 +63,11 @@ class GenerateRecordTypeTestCase(unittest.TestCase):
 		self.assertEqual(r.values, (1, 2, 3))
 
 
-
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(GenerateRecordTypeTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
-	
+
+
+
+if __name__ == '__main__':
+    unittest.main()

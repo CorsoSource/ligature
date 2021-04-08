@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from shared.data.expression import convert_to_postfix, Expression
+from ligature.expression import convert_to_postfix, Expression
 
 
 class ExpressionTestCase(unittest.TestCase):
@@ -86,4 +86,8 @@ class ExpressionTestCase(unittest.TestCase):
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(ExpressionTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
-	
+
+
+
+if __name__ == '__main__':
+    unittest.main()

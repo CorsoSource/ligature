@@ -1,10 +1,10 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
-from shared.data.examples import simpleRecordSet, simpleAddition
+from ligature.recordset import RecordSet
+from ligature.examples import simpleRecordSet, simpleAddition
 
-from shared.data.scanners.group import GroupScanner
+from ligature.scanners.group import GroupScanner
 
 
 class GroupScannerTestCase(unittest.TestCase):
@@ -48,3 +48,8 @@ class GroupScannerTestCase(unittest.TestCase):
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(GroupScannerTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

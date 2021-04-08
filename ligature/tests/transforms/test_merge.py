@@ -1,9 +1,9 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
+from ligature.recordset import RecordSet
 
-from shared.data.transforms.merge import Merge
+from ligature.transforms.merge import Merge
 
 
 class MergeTestCase(unittest.TestCase):
@@ -53,3 +53,8 @@ class MergeTestCase(unittest.TestCase):
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(MergeTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,13 +1,13 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
-from shared.data.examples import simpleRecordSet, simpleAddition
+from ligature.recordset import RecordSet
+from ligature.examples import simpleRecordSet, simpleAddition
 
-from shared.data.calculations.window import Window
+from ligature.calculations.aggregate import Aggregate
 
 
-class WindowTestCase(unittest.TestCase):
+class AggregateTestCase(unittest.TestCase):
 
 	def test_basic(self):
 
@@ -15,7 +15,7 @@ class WindowTestCase(unittest.TestCase):
 
 		srs = RecordSet(simpleRecordSet)
 		
-		c = Window([srs], function, 'c')
+		c = Aggregate([srs], function, 'c')
 
 		# Calculations are lazily evaluated
 		self.assertEqual(c._resultSet._groups, [])
@@ -23,7 +23,7 @@ class WindowTestCase(unittest.TestCase):
 		# When evaluated, we get the following
 		self.assertEqual(
 			[[v.c for v in group] for group in c.results.groups],
-			[[8, 10, 23]]
+			[[41]]
 			)
 
 		srs.extend(simpleAddition)
@@ -32,20 +32,25 @@ class WindowTestCase(unittest.TestCase):
 		self.assertEqual(len(c._resultSet._groups), 1)
 
 		# but upon evaluation we see an update has been applied
-		# note that this addition is ONE update - groups are not maintained
+		# note that results are always one group
 		self.assertEqual(
 			[[v.c for v in group] for group in c.results.groups],
-			[[8, 10, 23], [34, 44]]
+			[[119]]
 			)
 
 		# Demonstrate slicing for columns works as expected
 		self.assertEqual(
 			[tuple(group) for group in c.results['c',:]],
-			[(8, 10, 23), (34, 44)]
+			[(119,)]
 			)
 
 		
 
 def runTests():
-	suite = unittest.TestLoader().loadTestsFromTestCase(WindowTestCase)
+	suite = unittest.TestLoader().loadTestsFromTestCase(AggregateTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,9 +1,9 @@
 import unittest
 
-from shared.data.recordset import RecordSet
-from shared.data.examples import simpleRecordSet, simpleAddition
+from ligature.recordset import RecordSet
+from ligature.examples import simpleRecordSet, simpleAddition
 
-from shared.data.scanners.replaying import ReplayingElementScanner, ReplayingChunkScanner, ReplayingRecordScanner, ReplayingGroupScanner
+from ligature.scanners.replaying import ReplayingElementScanner, ReplayingChunkScanner, ReplayingRecordScanner, ReplayingGroupScanner
 
 
 def sentinel(iterable, stopValue):
@@ -308,3 +308,8 @@ def runTests():
 	suite4 = unittest.TestLoader().loadTestsFromTestCase(ReplayingGroupScannerTestCase)
 	allTests = unittest.TestSuite([suite1, suite2, suite3, suite4])
 	unittest.TextTestRunner(verbosity=2).run(allTests)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

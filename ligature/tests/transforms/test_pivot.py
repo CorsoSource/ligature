@@ -1,10 +1,10 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
-from shared.data.examples import simpleRecordSet, simpleAddition
+from ligature.recordset import RecordSet
+from ligature.examples import simpleRecordSet, simpleAddition
 
-from shared.data.transforms.pivot import Pivot
+from ligature.transforms.pivot import Pivot
 
 
 class PivotTestCase(unittest.TestCase):
@@ -40,3 +40,8 @@ class PivotTestCase(unittest.TestCase):
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(PivotTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

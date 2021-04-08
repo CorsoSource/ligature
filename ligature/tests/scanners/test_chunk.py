@@ -1,24 +1,24 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
-from shared.data.examples import simpleRecordSet, simpleAddition
+from ligature.recordset import RecordSet
+from ligature.examples import simpleRecordSet, simpleAddition
 
-from shared.data.scanners.element import ElementScanner
+from ligature.scanners.chunk import ChunkScanner
 
 
-class ElementScannerTestCase(unittest.TestCase):
+class ChunkScannerTestCase(unittest.TestCase):
 
 	def test_basic(self):
 
 		srs = RecordSet(simpleRecordSet)
 		
-		scanner = ElementScanner(srs,'a')
+		scanner = ChunkScanner(srs,'a')
 
 		# Scanners are like generators...
 		self.assertEqual(
 			[v for v in scanner], 
-			[1, 2, 3, 4, 5, 6, 7, 8, 9]
+			[(1, 2, 3, 4), (5, 6), (7, 8, 9)]
 			)
 
 		# ... and will exhaust when fully consumed
@@ -32,7 +32,7 @@ class ElementScannerTestCase(unittest.TestCase):
 		# adding data means the scanner consumes the new data
 		self.assertEqual(
 			[v for v in scanner],
-			[11, 12, 13, 14, 15, 16]
+			[(11, 12, 13), (14, 15, 16)]
 			)
 
 		# resetting the scanner means it will replay the whole dataset
@@ -40,11 +40,16 @@ class ElementScannerTestCase(unittest.TestCase):
 
 		self.assertEqual(
 			[v for v in scanner],
-			[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16]
+			[(1, 2, 3, 4), (5, 6), (7, 8, 9), (11, 12, 13), (14, 15, 16)]
 			)
 
 
 
 def runTests():
-	suite = unittest.TestLoader().loadTestsFromTestCase(ElementScannerTestCase)
+	suite = unittest.TestLoader().loadTestsFromTestCase(ChunkScannerTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

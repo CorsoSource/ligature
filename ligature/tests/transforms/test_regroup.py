@@ -1,9 +1,9 @@
 import unittest
 
 
-from shared.data.recordset import RecordSet
+from ligature.recordset import RecordSet
 
-from shared.data.transforms.regroup import Regroup
+from ligature.transforms.regroup import Regroup
 
 
 class RegroupTestCase(unittest.TestCase):
@@ -138,3 +138,8 @@ class RegroupTestCase(unittest.TestCase):
 def runTests():
 	suite = unittest.TestLoader().loadTestsFromTestCase(RegroupTestCase)
 	unittest.TextTestRunner(verbosity=2).run(suite)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

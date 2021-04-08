@@ -8,7 +8,7 @@ import tokenize
 from ast import literal_eval
 from StringIO import StringIO
 
-from ..tools.enum import MetaEnum, Enum
+from .enum import MetaEnum, Enum
 
 
 __copyright__ = """Copyright (C) 2020 Corso Systems"""
