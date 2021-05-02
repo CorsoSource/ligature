@@ -1,4 +1,4 @@
-from ..transform import Transform
+from ligature.transform import Transform
 
 
 class Unvacuum(Transform):

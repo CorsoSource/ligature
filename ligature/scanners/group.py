@@ -1,4 +1,4 @@
-from .chunk import ChunkScanner
+from ligature.scanners.chunk import ChunkScanner
 
 
 class GroupScanner(ChunkScanner):

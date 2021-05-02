@@ -1,4 +1,4 @@
-from .update import UpdateModel
+from ligature.update import UpdateModel
 
 try:
     from networkx import DiGraph

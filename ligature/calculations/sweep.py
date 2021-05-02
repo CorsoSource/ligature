@@ -1,5 +1,5 @@
-from ..calculation import Calculation
-from ..scanners.element import ElementScanner
+from ligature.calculation import Calculation
+from ligature.scanners.element import ElementScanner
 
 
 class Sweep(Calculation):

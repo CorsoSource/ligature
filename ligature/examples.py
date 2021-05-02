@@ -1,4 +1,4 @@
-from .recordset import RecordSet
+from ligature.recordset import RecordSet
 
 
 def genData(columns, rows, start=0):

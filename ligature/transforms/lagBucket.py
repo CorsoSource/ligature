@@ -1,6 +1,6 @@
-from ..transform import Transform
-from ..recordset import RecordSet
-from ..scanners.record import RecordScanner
+from ligature.transform import Transform
+from ligature.recordset import RecordSet
+from ligature.scanners.record import RecordScanner
 
 from itertools import izip as zip
 

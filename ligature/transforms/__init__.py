@@ -1,3 +1,3 @@
-from .merge import Merge
-from .pivot import Pivot
-from .regroup import Regroup
+from ligature.transforms.merge import Merge
+from ligature.transforms.pivot import Pivot
+from ligature.transforms.regroup import Regroup

@@ -1,8 +1,8 @@
-from ..scanners.element import ElementScanner
-from ..transform import Transform
-from ..recordset import RecordSet
-from ..compose import Composable
-from ..record import genRecordType
+from ligature.scanners.element import ElementScanner
+from ligature.transform import Transform
+from ligature.recordset import RecordSet
+from ligature.compose import Composable
+from ligature.record import genRecordType
 
 from itertools import izip as zip
 

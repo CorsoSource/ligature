@@ -1,4 +1,4 @@
-from ..scanner import Scanner
+from ligature.scanner import Scanner
 
 
 class ElementScanner(Scanner):

@@ -1,7 +1,7 @@
 import functools
 
-from .update import UpdateModel
-from .graph import GraphModel
+from ligature.update import UpdateModel
+from ligature.graph import GraphModel
 
 
 class MetaComposable(type):

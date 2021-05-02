@@ -2,6 +2,6 @@
     Simulators to generate streams of data.
 """
 
-from .drunk import DrunkenWalk
+from ligature.scanners.drunk import DrunkenWalk
 
 __all__ = ['DrunkenWalk']

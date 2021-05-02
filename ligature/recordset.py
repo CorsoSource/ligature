@@ -1,6 +1,6 @@
-from .record import RecordType, genRecordType
-from .update import UpdateModel
-from .graph import GraphModel
+from ligature.record import RecordType, genRecordType
+from ligature.update import UpdateModel
+from ligature.graph import GraphModel
 
 import functools, math
 from itertools import izip as zip

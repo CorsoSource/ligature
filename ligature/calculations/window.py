@@ -1,6 +1,6 @@
-from ..calculation import Calculation
-from ..scanners.chunk import ChunkScanner
-from ..calculations.sweep import Sweep
+from ligature.calculation import Calculation
+from ligature.scanners.chunk import ChunkScanner
+from ligature.calculations.sweep import Sweep
 
 
 class Window(Sweep, Calculation):

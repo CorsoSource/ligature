@@ -1,5 +1,5 @@
-from ..calculation import Calculation
-from ..scanners.chunk import ChunkScanner
+from ligature.calculation import Calculation
+from ligature.scanners.chunk import ChunkScanner
 
 
 class Cluster(Calculation):
