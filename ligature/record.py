@@ -25,7 +25,10 @@ class RecordType(object):
     #_reprString = 'Record(%s)' % (', '.join("'%s'=%%r" % f for f in _fields),)
 
     def __init__(self, values):
-        self._tuple = self._cast(values)
+        if isinstance(values, dict):
+            self._tuple = tuple(values.get(field) for field in self._fields)
+        else:
+            self._tuple = self._cast(values)
         assert len(self._tuple) == len(self._fields), 'Expected %d args, but got %d' % (len(self._fields), len(self._tuple))
             
     def _asdict(self):
@@ -79,7 +82,7 @@ class RecordType(object):
         pass
         
 
-def genRecordType(header):
+def genRecordType(header, BaseRecordType=RecordType):
     """Returns something like a namedtuple. 
     Designed to have lightweight instances while having many convenient ways
     to access the data.
@@ -108,7 +111,7 @@ def genRecordType(header):
 
     sanitizedFields = tuple(sanitizedFields)
 
-    class Record(RecordType):
+    class Record(BaseRecordType):
         """Generated to match the data stored."""
         _fields = tuple(rf for rf in rawFields)
         _sanitizedFields = tuple(srf for srf in sanitizedFields)
