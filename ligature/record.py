@@ -68,6 +68,10 @@ class RecordType(object):
         """Redirect to the tuple stored when iterating."""
         return iter(self._tuple)
 
+    def __str__(self):
+        return '{%s}' % ', '.join("%s: %s" % (f,v) for f,v in zip(r._fields, r._tuple))
+        # return '{%s}' % ', '.join("%r: %r" % (f,v) for f,v in zip(r._fields, r._tuple))
+
     def __repr__(self):
         'Format the representation string for better printing'
         return repr(self._asdict())

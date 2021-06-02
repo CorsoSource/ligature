@@ -143,10 +143,7 @@ class RecordSet(GraphModel,UpdateModel):
     def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False):#, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
-        """
-        # Initialize mixins
-        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate)
-        
+        """        
         # We can initialize with a record type, a record, or an iterable of records
         # First check if it's a DataSet object. If so, convert it.
         if isinstance(initialData, BasicDataset):
@@ -172,6 +169,9 @@ class RecordSet(GraphModel,UpdateModel):
         self._columns = tuple(RecordSetColumn(self, ix) 
                               for ix 
                               in range(len(self._RecordType._fields)))
+
+        # Initialize mixins
+        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate)
             
             
     def clear(self):
@@ -203,7 +203,7 @@ class RecordSet(GraphModel,UpdateModel):
             column,slicer = selector
             return self.column(column)[slicer]
         elif isinstance(selector, slice):
-            return islice(self.records, selector)     
+            return islice(self.records, selector.start, selector.stop, selector.step)     
         elif isinstance(selector, int):
             index = selector
             for group in self._groups:
@@ -321,7 +321,7 @@ class RecordSet(GraphModel,UpdateModel):
             self.extend(addition)
         return self
     
-    def _graph_attributes(self):
+    def _default_graph_attributes(self):
         fields = ', '.join(self._RecordType._fields)
         label = 'RecordSet\n%s' % fields
         return {

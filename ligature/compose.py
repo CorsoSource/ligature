@@ -19,12 +19,13 @@ class Composable(GraphModel,UpdateModel):
        as well as have a result that can be chained into the next.
     """
     __metaclass__ = MetaComposable
-    __slots__ = ('scanners', '_resultSet', '_needsUpdate')
+    __slots__ = ('scanners', '_resultSet', '_awaiting_apply')
     
     def __init__(self, *args, **kwargs):
+        self._awaiting_apply = True
+
         # Initialize mixins
         super(Composable, self).__init__(*args, **kwargs)
-        self._needsUpdate = True
         
     def _debounce_scanners(self):
         """As we iterate the scanners, one may exhaust prematurely,
@@ -42,24 +43,24 @@ class Composable(GraphModel,UpdateModel):
             else:
                 scanner.rewind()
                 
-    def updateFirst(function):
+    def _update_first(function):
         @functools.wraps(function)
-        def ensureUpdated(self, *args, **kwargs):
-            if self._needsUpdate:
+        def ensure_updated(self, *args, **kwargs):
+            if self._awaiting_apply:
                 self.apply()
             return function(self, *args, **kwargs)
-        return ensureUpdated
+        return ensure_updated
     
-    @updateFirst
+    @_update_first
     def __iter__(self):
         return (group for group in self.results.groups)
 
-    @updateFirst
+    @_update_first
     def __getitem__(self, selector):
         return self._resultSet[selector]
 
     @property
-    @updateFirst
+    @_update_first
     def results(self):
         return self._resultSet   
 
@@ -74,17 +75,17 @@ class Composable(GraphModel,UpdateModel):
                 source.subscribe(self)
         self._sources = newSources
             
-    def update(self, oldSelector, newSelector):
+    def update(self, old_selector, new_selector, source=None, depth=0):
         # (None, None) signals that the data is out of date, 
         #  but there is nothing for dependents to do yet.
-        self._needsUpdate = True
-        self.notify(None,None)
+        self._awaiting_apply = True
+        super(Composable, self).update(old_selector, new_selector, source, depth)
           
     def apply(self):
         for source in self.sources:
             if isinstance(source, Composable):
                 source.apply()
-        if self._needsUpdate:
+        if self._awaiting_apply:
             self._apply()
         self._debounce_scanners()
         

@@ -7,7 +7,7 @@ class Transform(Composable):
     """    
     ScanClass = Scanner
     
-    def _graph_attributes(self):
+    def _default_graph_attributes(self):
         label = '%s\\lOut: %s' % (
             type(self).__name__,
             ', '.join(self._resultSet._RecordType._fields))

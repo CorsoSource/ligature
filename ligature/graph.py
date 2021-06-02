@@ -83,24 +83,31 @@ except ImportError:
 class GraphModel(UpdateModel):
     
     # Global graph of the calculation
-    graph = DiGraph()
+    graph = DiGraph(rankdir='LR')
     
     def __init__(self, *args, **kwargs):
         # Initialize mixins
         super(GraphModel, self).__init__(*args, **kwargs)
         self.graph.add_node(self)
     
-    def _graph_attributes(self):
+    def _default_graph_attributes(self):
         """Define the attributes of this node for graphing.
            Override in the subclasses to customize the graph nodes.
         """
-        return {}
+        pass
+
+    @property
+    def _graph_attributes(self):
+        return self.graph.node[self]
     
-    def draw_graph(self):
+    def draw_graph(self, show=False, **attributes):
         for node in self.graph:
-            for key,value in node._graph_attributes().items():
-                self.graph.nodes[node][key] = value
-        return draw(self.graph)
+            for key,value in node._default_graph_attributes().items():
+                if not key in node._graph_attributes:
+                    self.graph.nodes[node][key] = value
+        for key,value in attributes.items():
+            self.graph.graph[key] = value
+        return draw(self.graph, show=show)
             
     def subscribe(self, listener):
         super(GraphModel, self).subscribe(listener)

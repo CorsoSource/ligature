@@ -61,7 +61,7 @@ class Calculation(Composable):
         self.calculate()
         self._needsUpdate = False
             
-    def _graph_attributes(self):
+    def _default_graph_attributes(self):
         label = 'In: %s\\lf(x): "%s"\\lOut: %s' % (
             ', '.join(getArguments(self.function)),
             type(self).__name__,
