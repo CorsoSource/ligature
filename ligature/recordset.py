@@ -206,12 +206,21 @@ class RecordSet(GraphModel,UpdateModel):
             return islice(self.records, selector.start, selector.stop, selector.step)     
         elif isinstance(selector, int):
             index = selector
-            for group in self._groups:
-                if len(group) > index:
-                    return group[index]
-                index -= len(group)
+            if index >= 0:
+                for group in self._groups:
+                    if len(group) > index:
+                        return group[index]
+                    index -= len(group)
+                else:
+                    raise IndexError("There are not enough records in the groups to meet the index %d" % selector)
             else:
-                raise IndexError("There are not enough records in the groups to meet the index %d" % index)
+                index *= -1 # make absolute to count backwards from
+                for group in reversed(self._groups):
+                    if len(group) >= index:
+                        return group[len(group)-index]
+                    index -= len(group)
+                else:
+                    raise IndexError("There are not enough records in the groups to meet back to the index %d" % selector)
         else:
             raise NotImplementedError("The selector '%r' is not implemented" % selector)
             #return self._groups[selector]
