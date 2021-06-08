@@ -53,14 +53,14 @@ class Merge(Transform):
         self.scanners = tuple(scanner 
                               for field,scanner 
                               in scanners)
-        self._resultSet = RecordSet(recordType=genRecordType(field 
+        self._resultset = RecordSet(recordType=genRecordType(field 
                                                              for field,scanner 
                                                              in scanners))
         
     def transform(self):
         """Simply scan down the sources, generating new records."""
-        self._resultSet.append( tuple(
-            self._resultSet.coerceRecordType(newRecordValues)
+        self._resultset.append( tuple(
+            self._resultset.coerceRecordType(newRecordValues)
             for newRecordValues
             in zip(*self.scanners)
             ) )        

@@ -73,7 +73,7 @@ class Collation(Transform):
         self._scanner_coverage = scanner_coverage
         
         self.scanners = tuple(scanners)
-        self._resultSet = RecordSet(recordType=((self._key_field,) + self._target_fields + ((self._collation_field,) or tuple())))
+        self._resultset = RecordSet(recordType=((self._key_field,) + self._target_fields + ((self._collation_field,) or tuple())))
     
     
     def transform(self):
@@ -89,10 +89,10 @@ class Collation(Transform):
                 return None
 
         # initial conditions
-        if self._resultSet:
-            cursor_values = dict((field, value) for field, value in zip(self._resultSet._RecordType._fields, self._resultSet._groups[-1][-1]))
+        if self._resultset:
+            cursor_values = dict((field, value) for field, value in zip(self._resultset._RecordType._fields, self._resultset._groups[-1][-1]))
         else:
-            cursor_values = dict((field, None) for field in self._resultSet._RecordType._fields) # initialize to None to ensure _some_ value for all non-key/group fields
+            cursor_values = dict((field, None) for field in self._resultset._RecordType._fields) # initialize to None to ensure _some_ value for all non-key/group fields
         
         cursor_value_heap = []
         for scanner in frozenset(scanners):
@@ -118,17 +118,17 @@ class Collation(Transform):
 
                 # when grouping for merge, assume group final value is most recent by key sort value
                 if cursor_values[self._collation_field] == group_value and group_value is not None:
-                    merged[-1] = self._resultSet._RecordType(cursor_values)
+                    merged[-1] = self._resultset._RecordType(cursor_values)
                 else:
                     cursor_values[self._collation_field] = group_value
-                    merged.append(self._resultSet._RecordType(cursor_values))
+                    merged.append(self._resultset._RecordType(cursor_values))
             else:
-                merged.append(self._resultSet._RecordType(cursor_values))
+                merged.append(self._resultset._RecordType(cursor_values))
 
             entry = get_next(scanner)
             if entry is not None:
                 heappush(cursor_value_heap, (entry[self._key_field], entry, scanner))
 
         if merged:
-            self._resultSet.extend([[v for v in merged]])
+            self._resultset.extend([[v for v in merged]])
             

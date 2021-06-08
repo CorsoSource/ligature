@@ -17,7 +17,7 @@ class Regroup(Transform):
         super(Regroup, self).__init__()
         
         self.sources = (source, target)
-        self._resultSet = RecordSet(recordType=target._RecordType)
+        self._resultset = RecordSet(recordType=target._RecordType)
         self._generateScanners()
     
     def _generateScanners(self):
@@ -31,7 +31,7 @@ class Regroup(Transform):
         for group in source:
             newGroup = tuple(record for _,record in zip(group, target))
             if len(newGroup) == len(group):
-                self._resultSet.extend( (newGroup,) )
+                self._resultset.extend( (newGroup,) )
                 source.anchor()
                 target.anchor()
             else:

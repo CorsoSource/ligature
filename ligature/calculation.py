@@ -23,8 +23,8 @@ class Calculation(Composable):
         # Initialize mixins
         super(Calculation, self).__init__(sources, function, outputLabels, mapInputs={})
       
-        self._resultSet = RecordSet(recordType=genRecordType(outputLabels))
-        self.subscribe(self._resultSet)
+        self._resultset = RecordSet(recordType=genRecordType(outputLabels))
+        self.subscribe(self._resultset)
         self.sources = tuple(sources)
 
         if isinstance(function, (str,unicode)):
@@ -65,7 +65,7 @@ class Calculation(Composable):
         label = 'In: %s\\lf(x): "%s"\\lOut: %s' % (
             ', '.join(getArguments(self.function)),
             type(self).__name__,
-            ', '.join(self._resultSet._RecordType._fields))
+            ', '.join(self._resultset._RecordType._fields))
         return {
             'label': label,
             'shape': 'rect'

@@ -19,7 +19,7 @@ class Composable(GraphModel,UpdateModel):
        as well as have a result that can be chained into the next.
     """
     __metaclass__ = MetaComposable
-    __slots__ = ('scanners', '_resultSet', '_awaiting_apply')
+    __slots__ = ('scanners', '_resultset', '_awaiting_apply')
     
     def __init__(self, *args, **kwargs):
         self._awaiting_apply = True
@@ -57,12 +57,12 @@ class Composable(GraphModel,UpdateModel):
 
     @_update_first
     def __getitem__(self, selector):
-        return self._resultSet[selector]
+        return self._resultset[selector]
 
     @property
     @_update_first
     def results(self):
-        return self._resultSet   
+        return self._resultset   
 
     # This allows us to better control how the graph is followed
     def _replace_sources(self, newSources):
@@ -70,7 +70,7 @@ class Composable(GraphModel,UpdateModel):
             source.unsubscribe(self)
         for source in newSources:
             if isinstance(source, Composable):
-                source._resultSet.subscribe(self)
+                source._resultset.subscribe(self)
             else:
                 source.subscribe(self)
         self._sources = newSources

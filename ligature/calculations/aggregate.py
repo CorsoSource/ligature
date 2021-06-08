@@ -18,6 +18,6 @@ class Aggregate(Calculation):
         for scanner in self.scanners:
             scanner.reset()
         
-        self._resultSet.clear()
+        self._resultset.clear()
         
-        self._resultSet.append( (self.function(*self.scanners),) )
+        self._resultset.append( (self.function(*self.scanners),) )

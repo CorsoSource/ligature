@@ -18,7 +18,7 @@ class LagBucket(Transform):
         
         self._lag = lag
         self.sources = (source,)
-        self._resultSet = RecordSet(recordType=source._RecordType)
+        self._resultset = RecordSet(recordType=source._RecordType)
         self.scanners = (self.ScanClass(source),)
         self._lagRecords = []
         
@@ -28,7 +28,7 @@ class LagBucket(Transform):
         else:
             for record in self.scanners[0]:
                 prev = self._lagRecords.pop(0)
-                self._resultSet.append(
+                self._resultset.append(
                     # cast to the record early so the tuples are not misunderstood
                         tuple(
                             (last,this)

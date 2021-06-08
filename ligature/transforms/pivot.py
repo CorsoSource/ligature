@@ -18,12 +18,12 @@ class Pivot(Transform):
         super(Pivot, self).__init__(source)
 
         self.sources = (source,)
-        self._resultSet = RecordSet(recordType=source._RecordType)
+        self._resultset = RecordSet(recordType=source._RecordType)
         self.scanners = (self.ScanClass(self.sources[0]),)
         
     def transform(self):
         for group in self.scanners[0]:
-            self._resultSet.append( 
+            self._resultset.append( 
                 # cast to the record early so the tuples are not misunderstood
-                self._resultSet.coerceRecordType(
+                self._resultset.coerceRecordType(
                     tuple(zip(*group)) ) )

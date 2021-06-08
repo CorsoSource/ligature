@@ -15,7 +15,7 @@ class Cluster(Calculation):
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(1,3,3,5),(5,7),(7,9,9)] # 3 groups
         """
-        self._resultSet.extend(
+        self._resultset.extend(
             [ tuple( self.function(*rowValues)
                      for rowValues 
                      in zip(*groupedValues) )

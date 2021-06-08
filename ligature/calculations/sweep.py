@@ -16,6 +16,6 @@ class Sweep(Calculation):
         rs.b = [(0,1,0,1),(0,1),(0,1,0)]
         calc = [(1,3,3,5,5,7,7,9,9)]     # 1 group of 9
         """
-        self._resultSet.append(self.function(*values)
+        self._resultset.append(self.function(*values)
                                for values 
                                in zip(*self.scanners))

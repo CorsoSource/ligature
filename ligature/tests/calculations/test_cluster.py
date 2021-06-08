@@ -18,7 +18,7 @@ class ClusterTestCase(unittest.TestCase):
 		c = Cluster([srs], function, 'c')
 
 		# Calculations are lazily evaluated
-		self.assertEqual(c._resultSet._groups, [])
+		self.assertEqual(c._resultset._groups, [])
 
 		# When evaluated, we get the following
 		self.assertEqual(
@@ -29,7 +29,7 @@ class ClusterTestCase(unittest.TestCase):
 		srs.extend(simpleAddition)
 
 		# adding data from a source doesn't immediately update
-		self.assertEqual(len(c._resultSet._groups), 3)
+		self.assertEqual(len(c._resultset._groups), 3)
 
 		# but upon evaluation we see an update has been applied
 		# note that this maintains groups

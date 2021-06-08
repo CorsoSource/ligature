@@ -17,7 +17,7 @@ class Cluster(Transform):
         
         self._key_field = key_field
         self.sources = (source,)
-        self._resultSet = RecordSet(recordType=source._RecordType)
+        self._resultset = RecordSet(recordType=source._RecordType)
         self.scanners = (self.ScanClass(source),)
         
     def transform(self):
@@ -27,13 +27,13 @@ class Cluster(Transform):
         groups = []
         group = []
         
-        if self._resultSet._groups:
-            last_key_value = self._resultSet._groups[-1][-1][self._key_field]
+        if self._resultset._groups:
+            last_key_value = self._resultset._groups[-1][-1][self._key_field]
             
             # loop one: fill for continuity
             for entry in self.scanners[0]:
                 if entry[self._key_field] == last_key_value:
-                    self._resultSet._groups[-1] += (entry,)
+                    self._resultset._groups[-1] += (entry,)
                 else:
                     group = [entry]
                     last_key_value = entry[self._key_field]
@@ -49,5 +49,5 @@ class Cluster(Transform):
         else:
             groups.append(group)
             
-        self._resultSet.extend(groups)
+        self._resultset.extend(groups)
 

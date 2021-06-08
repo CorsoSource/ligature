@@ -10,7 +10,7 @@ class Transform(Composable):
     def _default_graph_attributes(self):
         label = '%s\\lOut: %s' % (
             type(self).__name__,
-            ', '.join(self._resultSet._RecordType._fields))
+            ', '.join(self._resultset._RecordType._fields))
         return {
             'label': label,
             'shape': 'doubleoctagon'
