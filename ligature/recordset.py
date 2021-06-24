@@ -140,7 +140,7 @@ class RecordSet(GraphModel,UpdateModel):
         # Note that it'll regenerate indexes even on copy...
         
     
-    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False):#, indexingFunction=None):        
+    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, scalar_tuples=False, *args, **kwargs):#, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
         """        
@@ -151,7 +151,7 @@ class RecordSet(GraphModel,UpdateModel):
         elif recordType:
             # create a RecordType, if needed
             if not (isinstance(recordType, type) and issubclass(recordType, RecordType)):
-                recordType = genRecordType(recordType)
+                recordType = genRecordType(recordType, scalar_tuples=scalar_tuples)
             if initialData:
                 self._initializeRaw(recordType, initialData)
             else:
@@ -171,7 +171,7 @@ class RecordSet(GraphModel,UpdateModel):
                               in range(len(self._RecordType._fields)))
 
         # Initialize mixins
-        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate)
+        super(RecordSet, self).__init__(*args, **kwargs)
             
             
     def clear(self):

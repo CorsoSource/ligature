@@ -64,6 +64,10 @@ class RecordType(object):
         except (TypeError,IndexError):
             return self._tuple[self._lookup[key]]
 
+    def __len__(self):
+        """Get the width of the record's tuple."""
+        return len(self._tuple)
+
     def __iter__(self):
         """Redirect to the tuple stored when iterating."""
         return iter(self._tuple)
@@ -86,7 +90,7 @@ class RecordType(object):
         pass
         
 
-def genRecordType(header, BaseRecordType=RecordType):
+def genRecordType(header, BaseRecordType=RecordType, scalar_tuples=False):
     """Returns something like a namedtuple. 
     Designed to have lightweight instances while having many convenient ways
     to access the data.
@@ -128,7 +132,7 @@ def genRecordType(header, BaseRecordType=RecordType):
     for ix, key in enumerate(sanitizedFields):
         setattr(Record, key, property(lambda self, ix=ix: self._tuple[ix]))
         
-    if len(Record._fields) == 1:
+    if len(Record._fields) == 1 and not scalar_tuples:
         setattr(Record, '_cast', lambda self,v: (v,))
     else:
         setattr(Record, '_cast', lambda self,v: tuple(v))
