@@ -3,6 +3,7 @@ from ligature.scanner import Scanner
 from ligature.recordset import RecordSet
 from ligature.record import genRecordType
 from ligature.expression import Expression
+from ligature.scanners.identity import Identity
 
 
 def getArguments(function):
@@ -19,9 +20,9 @@ class Calculation(Composable):
     
     ScanClass = Scanner
     
-    def __init__(self, sources, function, outputLabels, mapInputs={}):
+    def __init__(self, sources, function, outputLabels, mapInputs={}, *args, **kwargs):
         # Initialize mixins
-        super(Calculation, self).__init__(sources, function, outputLabels, mapInputs={})
+        super(Calculation, self).__init__(*args, **kwargs)
       
         self._resultset = RecordSet(recordType=genRecordType(outputLabels))
         self.subscribe(self._resultset)
@@ -44,13 +45,25 @@ class Calculation(Composable):
         columns = [self._mapInputs.get(arg,arg) for arg in getArguments(self.function)]
         for column in columns:
             for source in reversed(self.sources):
-                if isinstance(source, Composable):
-                    source = source.results
-                    
-                if column in source._RecordType._lookup:
-                    scanners.append(self.ScanClass(source, column))
-                    source.subscribe(self)
+                if column is source:
+                    scanners.append(Identity(source))
                     break
+
+                if isinstance(source, (Composable, RecordSet)):
+                    if isinstance(source, Composable):
+                        source = source.results
+                        
+                    if column in source._RecordType._lookup:
+                        scanners.append(self.ScanClass(source, column))
+                        source.subscribe(self)
+                        break
+                else:
+                    try:
+                        _ = getattr(source, column)
+                        scanners.append(Identity(source, column))
+                        break
+                    except:
+                        pass
                     
             else: # should not complete loop - a column must be found and break!
                 raise ValueError('Column "%s" not found in sources!' % column) #' \n\t%s' % (column, '\n\t'.join('{%s}' % s._lookup.keys() for s in reversed(self.sources)))
