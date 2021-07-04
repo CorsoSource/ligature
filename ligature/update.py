@@ -7,18 +7,24 @@ class UpdateModel(object):
     """
     
     # Slots ensures we're explicit and fast
-    __slots__ = ('_sources', '_listeners', '__weakref__')
+    __slots__ = ('_sources', '_listeners', 
+                 '_metadata', '_notify_callback',
+                 '__weakref__')
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, metadata=None, notify_callback=None, *args, **kwargs):
         """Initialize the chain.
         By tracking both sources and listeners, we can make a graph of what
           gets updated by what.
+        The metadata is a bucket for runtime info to be checked during notifications.
         """
         # Initialize mixins - NOPE Update is not cooperative.
         # It expects to be a base class
         #super(UpdateModel, self).__init__(*args, **kwargs)
         self._sources = tuple()
         self._listeners = WeakSet()
+        self._metadata = metadata
+        self._notify_callback = notify_callback
+
         
     def subscribe(self, listener):
         """Add a listener to the subscriber list.
@@ -48,6 +54,8 @@ class UpdateModel(object):
                 pass
             except AttributeError:
                 pass
+        if self._notify_callback:
+            self._notify_callback(old_selector, new_selector, source or self, depth+1)
             
     def update(self, old_selector, new_selector, source=None, depth=0):
         """Execute the update. Each class will have its own way to implement this."""

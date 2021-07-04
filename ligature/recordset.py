@@ -1,6 +1,6 @@
 from ligature.record import RecordType, genRecordType
 from ligature.update import UpdateModel
-from ligature.graph import GraphModel
+# from ligature.graph import GraphModel
 
 import functools, math
 from itertools import izip as zip
@@ -54,7 +54,7 @@ class RecordSetColumn(object):
 
         
 
-class RecordSet(GraphModel,UpdateModel):
+class RecordSet(UpdateModel):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence

@@ -1,7 +1,7 @@
 import functools
 
 from ligature.update import UpdateModel
-from ligature.graph import GraphModel
+# from ligature.graph import GraphModel
 
 
 class MetaComposable(type):
@@ -14,7 +14,7 @@ class MetaComposable(type):
         return newclass
     
     
-class Composable(GraphModel,UpdateModel):
+class Composable(UpdateModel):
     """All composable classes will scan and consume data
        as well as have a result that can be chained into the next.
     """
@@ -69,10 +69,13 @@ class Composable(GraphModel,UpdateModel):
         for source in set(self._sources).difference(set(newSources)):
             source.unsubscribe(self)
         for source in newSources:
-            if isinstance(source, Composable):
-                source._resultset.subscribe(self)
-            else:
-                source.subscribe(self)
+            try:
+                if isinstance(source, Composable):
+                    source._resultset.subscribe(self)
+                else:
+                    source.subscribe(self)
+            except AttributeError:
+                pass # source does not subscribe
         self._sources = newSources
             
     def update(self, old_selector, new_selector, source=None, depth=0):
