@@ -11,9 +11,9 @@ class Cluster(Transform):
 
     ScanClass = RecordScanner
 
-    def __init__(self, source, key_field):
+    def __init__(self, source, key_field, *args, **kwargs):
         # Initialize mixins
-        super(Cluster, self).__init__()
+        super(Cluster, self).__init__(*args, **kwargs)
         
         self._key_field = key_field
         self.sources = (source,)

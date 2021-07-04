@@ -14,9 +14,9 @@ class Merge(Transform):
     """
     ScanClass = ElementScanner
     
-    def __init__(self, sources):
+    def __init__(self, sources, *args, **kwargs):
         # Initialize mixins
-        super(Merge, self).__init__()
+        super(Merge, self).__init__(*args, **kwargs)
         self.sources = tuple(sources)
         self._resolveSources()
         

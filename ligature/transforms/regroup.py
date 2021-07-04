@@ -12,9 +12,9 @@ class Regroup(Transform):
     """
     ScanClass = (ReplayingGroupScanner, ReplayingRecordScanner)
     
-    def __init__(self, source, target):
+    def __init__(self, source, target, *args, **kwargs):
         # Initialize mixins
-        super(Regroup, self).__init__()
+        super(Regroup, self).__init__(*args, **kwargs)
         
         self.sources = (source, target)
         self._resultset = RecordSet(recordType=target._RecordType)

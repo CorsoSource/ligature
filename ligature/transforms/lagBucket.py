@@ -12,9 +12,9 @@ class LagBucket(Transform):
     __slots__ = ('_lag', '_lagRecords')
     ScanClass = RecordScanner
     
-    def __init__(self, source, lag=1):
+    def __init__(self, source, lag=1, *args, **kwargs):
         #Initialize mixins
-        super(LagBucket, self).__init__()
+        super(LagBucket, self).__init__(*args, **kwargs)
         
         self._lag = lag
         self.sources = (source,)

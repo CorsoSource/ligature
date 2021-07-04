@@ -13,9 +13,9 @@ class Pivot(Transform):
     """
     ScanClass = GroupScanner
 
-    def __init__(self, source):
+    def __init__(self, source, *args, **kwargs):
         # Initialize mixins
-        super(Pivot, self).__init__(source)
+        super(Pivot, self).__init__(*args, **kwargs)
 
         self.sources = (source,)
         self._resultset = RecordSet(recordType=source._RecordType)

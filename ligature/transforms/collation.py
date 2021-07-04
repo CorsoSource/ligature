@@ -19,8 +19,8 @@ class Collation(Transform):
     
     ScanClass = RecordScanner
     
-    def __init__(self, sources, key_field, target_fields=None, collation_field=None):
-        super(Collation, self).__init__()
+    def __init__(self, sources, key_field, target_fields=None, collation_field=None, *args, **kwargs):
+        super(Collation, self).__init__(*args, **kwargs)
         self.sources = tuple(sources)
         
         self._key_field = key_field
