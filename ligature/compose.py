@@ -62,7 +62,18 @@ class Composable(UpdateModel):
     @property
     @_update_first
     def results(self):
-        return self._resultset   
+        return self._resultset
+
+
+    def clear(self):
+        # TODO: this likely causes an extra update in the subscription graph
+        #   Ensure that the UpdateModel only notifies once for a clear
+        self._resultset.clear() # NOTE: we're depending on the recordset to notify of the update
+        for scanner in self.scanners:
+            scanner.reset()
+        # mark dirty for update next call
+        self._awaiting_apply = True
+
 
     # This allows us to better control how the graph is followed
     def _replace_sources(self, newSources):
@@ -81,8 +92,12 @@ class Composable(UpdateModel):
     def update(self, old_selector, new_selector, source=None, depth=0):
         # (None, None) signals that the data is out of date, 
         #  but there is nothing for dependents to do yet.
+        # If the dependent has been fully replaced, from start to last, then reset
         self._awaiting_apply = True
-        super(Composable, self).update(old_selector, new_selector, source, depth)
+        if source is not self and old_selector == slice(None, None) and new_selector == slice(None, None):
+            self.clear()
+        
+        super(Composable, self).update(old_selector, new_selector, source or self, depth)
           
     def apply(self):
         for source in self.sources:

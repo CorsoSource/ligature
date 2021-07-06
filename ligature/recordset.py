@@ -176,6 +176,7 @@ class RecordSet(UpdateModel):
             
     def clear(self):
         self._groups = []
+        self.notify(slice(None, None), slice(None, None),)
         
         
     def column(self,column):
@@ -309,7 +310,7 @@ class RecordSet(UpdateModel):
                                   for entry
                                   in addition ])
             self._groups.append(newGroup)
-            self.notify(None, -1)
+            self.notify(None, slice(-1))
     
     def extend(self, additionalGroups):
         """Extend the records by concatenating the record groups of another RecordSet.

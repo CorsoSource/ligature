@@ -49,6 +49,9 @@ class UpdateModel(object):
         """
         for dependent in self._listeners:
             try:
+                # TODO: verify that for each update, only one update is marshalled and fired
+                #   for example, if an update forces a Composable to clear,
+                #   then we can expect that it'll fire for both the clear _and_ the pass-thru update
                 dependent.update(old_selector, new_selector, source or self, depth+1)
             except NotImplementedError:
                 pass
