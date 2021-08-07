@@ -342,11 +342,12 @@ class RecordSet(UpdateModel):
     def __str__(self):
         return 'RecordSet=%r' % repr(self._RecordType._fields)
                
-    def __repr__(self, elideLimit=20):
+    def __repr__(self, elideLimit=20, tailCount=None, indent=''):
         'Format the representation string for better printing'
         records = list(islice((r for r in self.records), elideLimit))
         totalRecordCount = sum(len(g) for g in self.groups)
-        out = ['RecordSet with %d groups of %d records' % (len(self), totalRecordCount)]
+        out = ['RecordSet: %d groups of %d records%s' % (
+                    len(self), totalRecordCount, ' \n%s     meta: %r' % (indent, self.metadata,) if self.metadata else '')]
         # preprocess
         maxWidths = [max([len(f)] + [len(repr(v))+1 for v in column]) 
                      for f,column 

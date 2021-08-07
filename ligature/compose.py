@@ -109,3 +109,7 @@ class Composable(UpdateModel):
         
     def _apply(self):
         raise NotImplementedError("The base composable class' apply() must be overridden.")
+
+
+    def __repr__(self):
+        return '<%s: %r>\n%r' % (type(self).__name__, self.metadata, self.results)
