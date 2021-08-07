@@ -204,7 +204,12 @@ class RecordSet(UpdateModel):
             column,slicer = selector
             return self.column(column)[slicer]
         elif isinstance(selector, slice):
-            return islice(self.records, selector.start, selector.stop, selector.step)     
+            if (selector.start or 0) < 0:
+                return islice(self.records_reversed, 
+                    selector.stop if selector.stop is None else -selector.stop, 
+                    - selector.start, selector.step)
+            else:
+                return islice(self.records, selector.start, selector.stop, selector.step)     
         elif isinstance(selector, int):
             index = selector
             if index >= 0:
@@ -237,6 +242,12 @@ class RecordSet(UpdateModel):
         return (record 
                 for group in self._groups 
                 for record in group)
+
+    @property
+    def records_reversed(self):
+        return (record
+                for group in reversed(self._groups)
+                for record in reversed(group) )
     
     def __iter__(self):
         return self.records
@@ -310,7 +321,8 @@ class RecordSet(UpdateModel):
                                   for entry
                                   in addition ])
             self._groups.append(newGroup)
-            self.notify(None, slice(-1))
+            # signal that a new group was added
+            self.notify(None, slice(-1, None))
     
     def extend(self, additionalGroups):
         """Extend the records by concatenating the record groups of another RecordSet.
@@ -362,7 +374,16 @@ class RecordSet(UpdateModel):
         out += [recordPattern % tuple(['',''] + list(self._RecordType._fields))]
         out += [recordPattern % tuple(['',''] + ['-'*len(field) for field in self._RecordType._fields])]
         
-        remaining = elideLimit
+        # set the default; use 0 to force no tail block
+        if tailCount is None:
+            tailCount = elideLimit / 2
+
+        if tailCount and totalRecordCount > elideLimit and elideLimit > tailCount:
+            remaining = elideLimit - tailCount
+        else:
+            remaining = elideLimit
+
+        # print the main block
         for gix,group in enumerate(self._groups):
             for j,record in enumerate(group):
                 out += [recordPattern % tuple(['' if j else gix,j] + [repr(v) for v in record])]
@@ -371,9 +392,35 @@ class RecordSet(UpdateModel):
                     break
             if not remaining:
                 break
+
         if totalRecordCount > elideLimit:
-            out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]   
+            # print an end block, if set
+            if tailCount and elideLimit > tailCount:
+                if totalRecordCount - elideLimit:
+                    out += ['  ... (%d elided)' % (totalRecordCount - elideLimit)]
+
+                out_tail = []
+
+                groupCount = len(self._groups)
+                for gix, group in enumerate(reversed(self._groups)):
+                    gix = groupCount - gix - 1
+                    recordCount = len(group)
+
+                    for j, record in enumerate(reversed(group)):
+                        j = recordCount - j - 1
+                        out_tail += [recordPattern % tuple(['' if j else gix,j] + [repr(v) for v in record])]
+                        tailCount -= 1
+                        if not tailCount:
+                            break
+                    if not tailCount:
+                        break
+                out += list(reversed(out_tail))
+            else:
+                out += ['  ... and %d elided' % (totalRecordCount - elideLimit)]
+
         out += ['']
 
-        return '\n'.join(out)
+        out = [indent + line for line in out]
+
+        return '\n' + '\n'.join(out) + '\n'
 

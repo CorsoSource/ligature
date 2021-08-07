@@ -7,7 +7,7 @@ class UpdateModel(object):
     """
     
     # Slots ensures we're explicit and fast
-    __slots__ = ('_sources', '_listeners', 
+    __slots__ = ('_sources', '_listeners', '_up_to_date',
                  '_metadata', '_notify_callback',
                  '__weakref__')
     
@@ -24,8 +24,17 @@ class UpdateModel(object):
         self._listeners = WeakSet()
         self._metadata = metadata
         self._notify_callback = notify_callback
+        self._up_to_date = True
 
-        
+        # Initialize mixins
+        super(UpdateModel, self).__init__(*args, **kwargs)
+
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+
     def subscribe(self, listener):
         """Add a listener to the subscriber list.
         This isn't a set - order will likely help efficiency,
@@ -52,26 +61,37 @@ class UpdateModel(object):
                 # TODO: verify that for each update, only one update is marshalled and fired
                 #   for example, if an update forces a Composable to clear,
                 #   then we can expect that it'll fire for both the clear _and_ the pass-thru update
-                dependent.update(old_selector, new_selector, source or self, depth+1)
+                if dependent.up_to_date or old_selector:
+                    dependent.update(old_selector, new_selector, source or self, depth+1)
             except NotImplementedError:
                 pass
             except AttributeError:
                 pass
+    
         if self._notify_callback:
-            self._notify_callback(old_selector, new_selector, source or self, depth+1)
+            try:
+                self._notify_callback(old_selector, new_selector, source or self, depth)
+            except:
+                pass # isolate event failures
             
     def update(self, old_selector, new_selector, source=None, depth=0):
         """Execute the update. Each class will have its own way to implement this."""
         # (None, None) signals that the data is out of date, 
         #  but there is nothing for dependents to do yet.
-        #self._needsUpdate = True
+        self._up_to_date = False
         # Pass-through updates without triggering
         self.notify(old_selector, new_selector, source or self, depth)
+
+        # NOTE: super calls in subclasses should mark up_to_date when they're brought up
     
     @property
     def listeners(self):
         return self._listeners
     
+    @property
+    def up_to_date(self):
+        return self._up_to_date    
+
     @listeners.setter
     def listeners(self, new_listeners):
         self._replace_listeners(new_listeners)

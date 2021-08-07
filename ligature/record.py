@@ -102,7 +102,10 @@ def genRecordType(header, BaseRecordType=RecordType, scalar_tuples=False):
 
     numericFieldPrefix = 'C'
     unsafePattern = re.compile('[^a-zA-Z0-9_]')
-    sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]
+    try:
+        sanitizedFields = [unsafePattern.sub('_', rf) for rf in rawFields]
+    except TypeError as error:
+        raise TypeError('Fields could not be sanitized: %r' % (rawFields,))
     for i,field in enumerate(sanitizedFields):
         if field[0].isdigit():
             sanitizedFields[i] = '%s%s' % (numericFieldPrefix, field)
