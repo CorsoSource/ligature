@@ -51,13 +51,24 @@ class Composable(UpdateModel):
             return function(self, *args, **kwargs)
         return ensure_updated
     
-    @_update_first
     def __iter__(self):
-        return (group for group in self.results.groups)
+        return iter(self.results)
+    
+    @property
+    def groups(self):
+        return self.results.groups
 
-    @_update_first
+    @property
+    def _groups(self):
+        return self.results._groups
+
+    @property
+    def records(self):
+        return self.results.records
+
     def __getitem__(self, selector):
-        return self._resultset[selector]
+        return self.results[selector]
+
 
     @property
     @_update_first

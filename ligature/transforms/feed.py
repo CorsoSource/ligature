@@ -45,9 +45,10 @@ class Feed(Transform):
         
     def transform(self):
                 
-        self._resultset.extend([
-            [ tuple(record) + tuple(getter(record) for getter in source_keys)
-              for record in scanner]
+        self._resultset.extend(
+            # use a generator to avoid adding empty entries
+            ( tuple(record) + tuple(getter(record) for getter in source_keys)
+              for record in scanner)
             for scanner, source_keys 
             in zip(self.scanners, self._source_keys)
-        ])
+        )
