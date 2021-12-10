@@ -41,6 +41,18 @@ class Feed(Transform):
                     lambda record, k=key_value: k
                     for key_value in key
                 ),)
+
+    def del_source(self, source):
+        if isinstance(source, Composable):
+            source = source.results
+        self._del_source(source)
+        ix_to_remove = set()
+        for ix, (scanner, key_functions) in enumerate(zip(self.scanners, self._source_keys)):
+            if scanner.source is source:
+                ix_to_remove.append(ix)
+        
+        self.scanners     = tuple(s for ix, s in enumerate(self.scanners)     if not ix in ix_to_remove)
+        self._source_keys = tuple(k for ix, k in enumerate(self._source_keys) if not ix in ix_to_remove)
         
         
     def transform(self):
