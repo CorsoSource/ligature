@@ -89,17 +89,25 @@ class Composable(UpdateModel):
     # This allows us to better control how the graph is followed
     def _replace_sources(self, newSources):
         for source in set(self._sources).difference(set(newSources)):
-            source.unsubscribe(self)
+            self._del_source(source)
         for source in newSources:
-            try:
-                if isinstance(source, Composable):
-                    source._resultset.subscribe(self)
-                else:
-                    source.subscribe(self)
-            except AttributeError:
-                pass # source does not subscribe
-        self._sources = newSources
-            
+            self._add_source(source)
+
+    def _add_source(self, new_source):
+        try:
+            if isinstance(new_source, Composable):
+                new_source._resultset.subscribe(self)
+            else:
+                new_source.subscribe(self)
+        except AttributeError:
+            pass # source does not subscribe
+        self._sources += (new_source,)
+
+    def _del_source(self, old_source):
+        old_source.unsubscribe(self)
+        self._sources = tuple(s for s in self._sources if s is not old_source)
+
+
     def update(self, old_selector, new_selector, source=None, depth=0):
         # (None, None) signals that the data is out of date, 
         #  but there is nothing for dependents to do yet.

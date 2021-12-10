@@ -89,3 +89,6 @@ class Scanner(object):
         
     def __iter__(self):
         raise NotImplementedError("The base scanner class' __iter__() must be overridden.")
+        # TODO: Make sure all iterators on `_groups` is thread safe
+        #   In a Jython environment, we don't want the iterator to change size while
+        #   in the __iter_* functions

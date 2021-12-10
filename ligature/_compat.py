@@ -16,6 +16,45 @@ __maintainer__ = 'Andrew Geiger'
 __email__ = 'andrew.geiger@corsosystems.com'
 
 
+
+def memoize(function):
+    """Memoize outputs.
+    
+    This will leave the last values in the cache potentially,
+      so there's an implicit assumption that this is getting called
+      frequently.
+    """
+    def memoized_call(*args, **kwargs):
+        
+        memo_key = (args, tuple(
+                (k,v) for k,v in sorted(kwargs.items())
+              ))
+        
+        # in the event something unhashable was sent, this'll failsafe      
+        key_state = 0
+        try:
+            if memo_key not in memoized_call.cache:
+                key_state = 1
+            else:
+                key_state = 2
+        except TypeError:
+            key_state = 0
+        
+        # failsafe or cache the result if needed...
+        if key_state == 0:
+            return function(*args, **kwargs)
+        elif key_state == 1:
+            memoized_call.cache[memo_key] = function(*args, **kwargs)
+        # ... and return the result
+        return memoized_call.cache[memo_key]
+    
+    memoized_call.cache = {}
+    memoized_call.timeout = {}
+    
+    return memoized_call
+
+
+
 try:
     _ = property.setter
 except AttributeError:

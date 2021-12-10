@@ -1,6 +1,8 @@
 from itertools import izip as zip
 import re
 
+from ligature._compat import memoize
+
 try:
     from com.inductiveautomation.ignition.common import BasicDataset
 except ImportError:
@@ -90,6 +92,7 @@ class RecordType(object):
         pass
         
 
+@memoize
 def genRecordType(header, BaseRecordType=RecordType, scalar_tuples=False):
     """Returns something like a namedtuple. 
     Designed to have lightweight instances while having many convenient ways

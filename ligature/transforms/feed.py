@@ -29,7 +29,7 @@ class Feed(Transform):
     def add_source(self, source, key=None):
         if isinstance(source, Composable):
             source = source.results
-        self.sources += (source,)
+        self._add_source(source)
         self.scanners += (self.ScanClass(source),)
         if not key:
             self._source_keys += (tuple(
