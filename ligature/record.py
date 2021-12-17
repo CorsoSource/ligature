@@ -60,6 +60,12 @@ class RecordType(object):
             raise ValueError('Got unexpected field names: %r' % keyValues.keys())
         self._tuple = result
 
+    def get(self, key, default=None):
+        try:
+            self.__getitem__[key]
+        except:
+            return default
+
     def __getitem__(self, key):
         try: # EAFP
             return self._tuple[key]
