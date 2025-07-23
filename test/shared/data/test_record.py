@@ -1,6 +1,8 @@
 import unittest
 
-from shared.tools.examples import simpleDataset
+# taken from metatools shared.tools.examples
+simpleListList = [range(i,i+3) for i in range(1,9,3)]
+simpleDataset = system.dataset.toDataSet(list('abc'),simpleListList)
 
 from shared.data.record import genRecordType
 
